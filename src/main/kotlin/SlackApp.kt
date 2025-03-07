@@ -1,85 +1,125 @@
 package no.jpro.slack.cv
 
+import com.slack.api.app_backend.slash_commands.payload.SlashCommandPayload
 import com.slack.api.bolt.App
 import com.slack.api.bolt.context.builtin.EventContext
+import com.slack.api.bolt.context.builtin.SlashCommandContext
 import com.slack.api.methods.response.users.UsersInfoResponse
 import com.slack.api.model.Message
-import com.slack.api.model.event.AppMentionEvent
 import com.slack.api.model.event.MessageEvent
+import kotlinx.coroutines.delay
+
+private const val CUSTOM_EVENT_TYPE = "cv_lest"
+
+private const val OPENAI_THREAD = "openai_thread_id"
 
 class SlackApp(val app: App = App()) {
     init {
 
         app.command("/lescv") { req, ctx ->
             val payload = req.payload
-            val metadata = mapOf("openai_ass_id" to "123123", "dill" to "dall")
             app.executorService().submit {
-                Thread.sleep(1000)
-                val resp=ctx.say {
-                    it
-                        .text("Da er jeg klar for å snakke om cv'n. Skriv ha du lurer på i tråden under v2")
-                        .channel(payload.userId)
-                        .metadata(
-                            Message.Metadata.builder()
-                                .eventType("cv_lest")
-                                .eventPayload(metadata)
-                                .build()
+//                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
+                ctx.respond{it.text("Jeg forteller en vits i stedet")}
+                OpenAIClient().chat(
+                    message = "Fortell en vits",
+                    onAnswer = {answer, openAiThread ->
+                        initialMessage(
+                            ctx = ctx,
+                            payload,
+                            openAiThread,
+                            message = answer
                         )
-                }
-                ctx.logger.info("respond: $resp")
+                    }
+                )
+//                sendMessage(
+//                    ctx,
+//                    payload,
+//                    message = "Da er jeg klar for å snakke om cv'n. Skriv ha du lurer på i tråden under v3"
+//                )
+//                ctx.logger.info("respond: $resp")
             }
             ctx.ack("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}")
-        }
-
-        app.message("Test") { message, ctx ->
-//            ctx.threadTs=message.event.threadTs
-
-            ctx.say {
-                it.text("Hello Slack!")
-                    .threadTs(message.event.ts)
-            }
-            ctx.ack()
-        }
-
-
-        app.event(AppMentionEvent::class.java) { payload, ctx ->
-            ctx.say {
-                it
-                    .threadTs(payload.event.ts)
-                    .text("<@${payload.event.user}> What's up?")
-            }
-            ctx.ack()
         }
 
 
         app.event(MessageEvent::class.java) { payload, ctx ->
             val event = payload.event
             app.executorService().submit {
-                onMessage(event, ctx)
+                replyMessage(event, ctx)
             }
             ctx.ack()
         }
 
     }
 
+    private fun initialMessage(
+        ctx: SlashCommandContext,
+        payload: SlashCommandPayload,
+        openAiThread: String? = null,
+        message: String
+    ): String? {
+        val resp = ctx.say {
+            it
+                .text(message)
+                .channel(payload.userId)
+                .metadata(
+                    Message.Metadata.builder()
+                        .eventType(CUSTOM_EVENT_TYPE)
+                        .eventPayload(mapOf(OPENAI_THREAD to openAiThread))
+                        .build()
+                )
+        }
+        return resp.ts
+    }
 
-    private fun onMessage(
-        event: MessageEvent,
-        ctx: EventContext
+    private suspend fun sendHello(
+        ctx: EventContext,
+        event: MessageEvent
     ) {
-        val usersInfo = getUserInfo(event)
-        ctx.logger.info("event result - ts {} threadts {} channel {}", event.ts, event.threadTs, event.channel)
-//        ctx.say("<@${event.user}> / ${usersInfo?.user?.profile?.email} Jeg forstår ikke hva du mener")
-        val replies = history(event)
-//        ctx.logger.info("replies {}", replies?.map { "${it.user}  ${it.text}\n" })
-        ctx.logger.info("replies metadata {}", replies?.map { it.metadata })
-
+        delay(5000)
+        ctx.logger.info("Sier hallo ${ctx.retryNum}")
         ctx.say {
             it
-                .text("jasså du sier ${event.text}")
+                .text("Hallo ${ctx.retryNum}")
                 .threadTs(event.threadTs ?: event.ts)
                 .channel(event.channel)
         }
+    }
+
+
+    private fun replyMessage(
+        event: MessageEvent,
+        ctx: EventContext
+    ) {
+//        val usersInfo = getUserInfo(event)
+//        ctx.logger.info("event result - ts {} threadts {} channel {}", event.ts, event.threadTs, event.channel)
+//        ctx.say("<@${event.user}> / ${usersInfo?.user?.profile?.email} Jeg forstår ikke hva du mener")
+        val replies = history(event)
+//        ctx.logger.info("replies {}", replies?.map { "${it.user}  ${it.text}\n" })
+        val openAiThread = replies?.map { it.metadata }
+            ?.first { it.eventType == CUSTOM_EVENT_TYPE }
+            ?.eventPayload?.get(OPENAI_THREAD).toString()
+        ctx.logger.info("replies metadata {}", openAiThread)
+        OpenAIClient().chat(
+            message = event.text,
+            threadId = openAiThread,
+            onAnswer = {answer, threadId ->
+                ctx.say {
+                    it
+                        .text(answer)
+                        .threadTs(event.threadTs ?: event.ts)
+                        .channel(event.channel)
+                }
+            }
+        )
+
+//        ctx.say {
+//            it
+//                .text("jasså du sier ${event.text}")
+//                .threadTs(event.threadTs ?: event.ts)
+//                .channel(event.channel)
+//        }
     }
 
     private fun history(event: MessageEvent): List<Message>? {
