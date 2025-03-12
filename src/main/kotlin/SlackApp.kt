@@ -7,17 +7,20 @@ import com.slack.api.bolt.context.builtin.SlashCommandContext
 import com.slack.api.methods.response.users.UsersInfoResponse
 import com.slack.api.model.Message
 import com.slack.api.model.event.MessageEvent
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.delay
 
 private const val CUSTOM_EVENT_TYPE = "cv_lest"
 
 private const val OPENAI_THREAD = "openai_thread_id"
+private val log = KotlinLogging.logger {}
 
 class SlackApp(val app: App = App()) {
     init {
 
         app.command("/lescv") { req, ctx ->
             val payload = req.payload
+            log.debug { "Slash command  /lescv" }
             app.executorService().submit {
 //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
                 ctx.respond{it.text("Jeg forteller en vits i stedet")}
@@ -42,6 +45,17 @@ class SlackApp(val app: App = App()) {
             ctx.ack("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}")
         }
 
+        app.message("ping"){payload, ctx ->
+            val event = payload.event
+            log.debug { "Answer pong" }
+            ctx.say {
+                it
+                    .text("Hallo ${ctx.retryNum}")
+                    .threadTs(event.threadTs ?: event.ts)
+                    .channel(event.channel)
+            }
+            ctx.ack()
+        }
 
         app.event(MessageEvent::class.java) { payload, ctx ->
             val event = payload.event
@@ -100,7 +114,7 @@ class SlackApp(val app: App = App()) {
         val openAiThread = replies?.map { it.metadata }
             ?.first { it.eventType == CUSTOM_EVENT_TYPE }
             ?.eventPayload?.get(OPENAI_THREAD).toString()
-        ctx.logger.info("replies metadata {}", openAiThread)
+        log.debug { "replies to openai thread $openAiThread" }
         OpenAIClient().chat(
             message = event.text,
             threadId = openAiThread,

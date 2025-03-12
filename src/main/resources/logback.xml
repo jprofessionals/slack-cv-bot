@@ -1,0 +1,14 @@
+<configuration>
+    <appender name="CLOUD" class="com.google.cloud.logging.logback.LoggingAppender">
+        <!-- Optional : filter logs at or above a level -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <logger name="no.jpro" level="debug"/>
+
+    <root level="info">
+        <appender-ref ref="CLOUD" />
+    </root>
+</configuration>

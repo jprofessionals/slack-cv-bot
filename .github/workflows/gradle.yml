@@ -14,6 +14,7 @@ on:
     branches: [ "main" ]
 
 env:
+  SERVICE: cvbot
   PROJECT_ID: my-page-jpro-test
   REGION: europe-north2
   GAR_LOCATION: europe-north2-docker.pkg.dev/my-page-jpro-test/jpro-slackbot/cvbot
@@ -62,6 +63,14 @@ jobs:
       - name: Push to docker
         run: docker push ${{ env.GAR_LOCATION }}
 
+      - name: 'Deploy to Cloud Run'
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: '${{ env.SERVICE }}'
+          region: '${{ env.REGION }}'
+          # NOTE: If using a pre-built image, update the image name below:
+
+          image: ${{ env.GAR_LOCATION }}
 
 
 

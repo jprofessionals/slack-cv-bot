@@ -13,12 +13,15 @@ import com.aallam.openai.api.run.RunRequest
 import com.aallam.openai.api.thread.ThreadId
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.extension.getData
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.seconds
+
+private val log = KotlinLogging.logger {}
 
 @OptIn(BetaOpenAI::class)
 class OpenAIClient(
@@ -37,10 +40,12 @@ class OpenAIClient(
         )
     }
 
-    fun chat(message: String, threadId: String? = null, onAnswer:(answer: String, threadId: String)-> Unit) {
+    fun chat(message: String, threadId: String? = null, onAnswer: (answer: String, threadId: String) -> Unit) {
         runBlocking {
+
             val thread = if (threadId != null) ThreadId(threadId) else openAI.thread().id
 //        val thread = openAI.thread(threadId)
+            log.debug { "Sending message $message in thread $threadId" }
 
             openAI.message(
                 threadId = thread,
@@ -49,12 +54,17 @@ class OpenAIClient(
                     content = message
                 )
             )
-            openAI.createStreamingRun(threadId=thread, request = RunRequest(
-                assistantId = AssistantId(assistantId)
-            ))
-                .filter { event -> event.type==AssistantStreamEventType.THREAD_MESSAGE_COMPLETED }
+            openAI.createStreamingRun(
+                threadId = thread, request = RunRequest(
+                    assistantId = AssistantId(assistantId)
+                )
+            )
+                .filter { event -> event.type == AssistantStreamEventType.THREAD_MESSAGE_COMPLETED }
                 .map { it.getData<Message>() }
-                .onEach { message -> onAnswer(parseMessage(message), message.threadId.id) }
+                .onEach { message ->
+                    log.debug { "Received answer from Openai ${message.content}" }
+                    onAnswer(parseMessage(message), message.threadId.id)
+                }
                 .collect()
 //            val run = openAI.createRun(
 //                threadId = thread,
