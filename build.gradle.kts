@@ -28,7 +28,7 @@ dependencies {
 }
 
 application {
-    mainClass = "no.jpro.slack.cv.Main"
+    mainClass = "no.jpro.slack.cv.MainKt"
 }
 
 tasks.test {
