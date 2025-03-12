@@ -35,21 +35,21 @@ jobs:
           distribution: 'temurin'
 
       - id: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.GCLOUD_ARTIFACT_REGISTRY_SERVICE_USER_KEY }}"
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{PROJECT_ID}}
+          project_id: ${{env.PROJECT_ID}}
 
       - name: Test gcloud CLI"
         run: gcloud info
 
       - name: Configure Docker to use gcloud as a credential helper
         run: |
-          gcloud auth configure-docker ${{REGION}}-docker.pkg.dev
+          gcloud auth configure-docker ${{env.REGION}}-docker.pkg.dev
 
       # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
       # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
