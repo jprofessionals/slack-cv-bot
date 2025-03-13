@@ -50,7 +50,7 @@ class SlackApp(val app: App = App()) {
             log.debug { "Answer pong" }
             ctx.say {
                 it
-                    .text("Hallo ${ctx.retryNum}")
+                    .text("pong ${ctx.retryNum}")
                     .threadTs(event.threadTs ?: event.ts)
                     .channel(event.channel)
             }
