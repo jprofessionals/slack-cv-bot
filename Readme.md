@@ -11,6 +11,9 @@ System variabler
 - **SLACK_SIGNING_SECRET**: Slack sikkerhetsopplegg. Finnes i config av slack app under Settings/Basic Information
 - *LOGBACK_APPENDER*: Hvor skal logges skrives. STDOUT eller GCLOUD. Default til GCLOUD
 
+Applikajsonen kjører på google cloud run https://console.cloud.google.com/run/detail/europe-north2/cvbot/
+og bygges og deployes via github actions
+
 ## Implementasjon
 
 Slack api for kotlin

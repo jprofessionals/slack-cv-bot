@@ -24,8 +24,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.17")
     implementation("com.google.cloud:google-cloud-logging-logback:0.131.11-alpha")
     // Openai
-    implementation("com.aallam.openai:openai-client:4.0.1")
-    runtimeOnly("io.ktor:ktor-client-java:3.1.0")
+    implementation ("io.github.sashirestela:simple-openai:3.19.3")
+    /* OkHttp dependency is optional if you decide to use it with simple-openai */
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
 }
 

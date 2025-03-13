@@ -1,14 +1,11 @@
 package no.jpro.slack.cv
 
-import com.slack.api.app_backend.slash_commands.payload.SlashCommandPayload
 import com.slack.api.bolt.App
 import com.slack.api.bolt.context.builtin.EventContext
-import com.slack.api.bolt.context.builtin.SlashCommandContext
 import com.slack.api.methods.response.users.UsersInfoResponse
 import com.slack.api.model.Message
 import com.slack.api.model.event.MessageEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.delay
 
 private const val CUSTOM_EVENT_TYPE = "cv_lest"
 
@@ -16,36 +13,27 @@ private const val OPENAI_THREAD = "openai_thread_id"
 private val log = KotlinLogging.logger {}
 
 class SlackApp(val app: App = App()) {
+    private val openAIClient = SimpleOpenAIClient()
+
     init {
+        // Rekkefølge betyr noe...
+        slashCommantLesCV()
+        pingMessage()
+        replyInThread()
+    }
 
-        app.command("/lescv") { req, ctx ->
-            val payload = req.payload
-            log.debug { "Slash command  /lescv" }
+    private fun replyInThread() {
+        app.event(MessageEvent::class.java) { payload, ctx ->
+            val event = payload.event
             app.executorService().submit {
-//                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
-                ctx.respond{it.text("Jeg forteller en vits i stedet")}
-                OpenAIClient().chat(
-                    message = "Fortell en vits",
-                    onAnswer = {answer, openAiThread ->
-                        initialMessage(
-                            ctx = ctx,
-                            payload,
-                            openAiThread,
-                            message = answer
-                        )
-                    }
-                )
-//                sendMessage(
-//                    ctx,
-//                    payload,
-//                    message = "Da er jeg klar for å snakke om cv'n. Skriv ha du lurer på i tråden under v3"
-//                )
-//                ctx.logger.info("respond: $resp")
+                replyMessageInThread(event, ctx)
             }
-            ctx.ack("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}")
+            ctx.ack()
         }
+    }
 
-        app.message("ping"){payload, ctx ->
+    private fun pingMessage() {
+        app.message("ping") { payload, ctx ->
             val event = payload.event
             log.debug { "Answer pong" }
             ctx.say {
@@ -56,53 +44,39 @@ class SlackApp(val app: App = App()) {
             }
             ctx.ack()
         }
+    }
 
-        app.event(MessageEvent::class.java) { payload, ctx ->
-            val event = payload.event
+
+    private fun slashCommantLesCV() {
+        app.command("/lescv") { req, ctx ->
+            val payload = req.payload
+            log.debug { "Slash command  /lescv" }
             app.executorService().submit {
-                replyMessage(event, ctx)
-            }
-            ctx.ack()
-        }
-
-    }
-
-    private fun initialMessage(
-        ctx: SlashCommandContext,
-        payload: SlashCommandPayload,
-        openAiThread: String? = null,
-        message: String
-    ): String? {
-        val resp = ctx.say {
-            it
-                .text(message)
-                .channel(payload.userId)
-                .metadata(
-                    Message.Metadata.builder()
-                        .eventType(CUSTOM_EVENT_TYPE)
-                        .eventPayload(mapOf(OPENAI_THREAD to openAiThread))
-                        .build()
+                //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
+                ctx.respond { it.text("Jeg forteller en vits i stedet") }
+                openAIClient.startNewThread(
+                    message = "Fortell en vits",
+                    onAnswer = { answer, openAiThread ->
+                        ctx.say {
+                            it
+                                .text(answer)
+                                .channel(payload.userId)
+                                .metadata(
+                                    Message.Metadata.builder()
+                                        .eventType(CUSTOM_EVENT_TYPE)
+                                        .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
+                                        .build()
+                                )
+                        }
+                    }
                 )
-        }
-        return resp.ts
-    }
-
-    private suspend fun sendHello(
-        ctx: EventContext,
-        event: MessageEvent
-    ) {
-        delay(5000)
-        ctx.logger.info("Sier hallo ${ctx.retryNum}")
-        ctx.say {
-            it
-                .text("Hallo ${ctx.retryNum}")
-                .threadTs(event.threadTs ?: event.ts)
-                .channel(event.channel)
+            }
+            ctx.ack("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}")
         }
     }
 
 
-    private fun replyMessage(
+    private fun replyMessageInThread(
         event: MessageEvent,
         ctx: EventContext
     ) {
@@ -115,15 +89,26 @@ class SlackApp(val app: App = App()) {
             ?.first { it.eventType == CUSTOM_EVENT_TYPE }
             ?.eventPayload?.get(OPENAI_THREAD).toString()
         log.debug { "replies to openai thread $openAiThread" }
-        OpenAIClient().chat(
+        if (openAiThread.isBlank()) {
+            ctx.say {
+                it
+                    .text("Finner ikke noe openai tråd. Så jeg vet ikke helt hva du holder på med")
+                    .threadTs(event.threadTs ?: event.ts)
+                    .channel(event.channel)
+            }
+            return
+        }
+
+        openAIClient.chatInThread(
             message = event.text,
-            threadId = openAiThread,
-            onAnswer = {answer, threadId ->
+            openAiThreadId = openAiThread,
+            onAnswer = { answer, threadId ->
                 ctx.say {
                     it
                         .text(answer)
                         .threadTs(event.threadTs ?: event.ts)
                         .channel(event.channel)
+
                 }
             }
         )
