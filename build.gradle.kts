@@ -19,7 +19,11 @@ dependencies {
     implementation("com.slack.api:slack-api-client-kotlin-extension:$slack_bolt_version")
     implementation("com.slack.api:slack-api-model-kotlin-extension:$slack_bolt_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+
+    // Json stuff
     implementation("com.jayway.jsonpath:json-path:2.9.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
+
     implementation ("io.github.oshai:kotlin-logging-jvm:7.0.3")
     implementation("ch.qos.logback:logback-classic:1.5.17")
     implementation("com.google.cloud:google-cloud-logging-logback:0.131.11-alpha")
