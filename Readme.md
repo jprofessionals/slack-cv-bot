@@ -4,7 +4,7 @@ Slackbot som gir leser cv, laster den inn til openai og gir deg mulighet til å 
 
 ## Konfig
 
-System variabler
+System variabler. 
 
 - **OPENAI_API_KEY**: Accesskey til openai
 - **SLACK_BOT_TOKEN**: Slack sikkerhetsopplegg. Finnes i config av slack app Features/OAuth & Permissions
@@ -21,3 +21,13 @@ https://tools.slack.dev/java-slack-sdk/guides/getting-started-with-bolt#run-kotl
 
 Applikasjonen bruker assistant og threads fra openai for å beholde en slags tilstand. Dette gjøres ved at openai
 threadid tas vare på i en slack tråd
+
+## Lokal utvikling
+
+Appen kan kjøres lokalt og eksponeres feks via https://ngrok.com/ 
+
+Urler må klippes ut og limes inn i slack config for appen under
+- Features/Event Subscriptions https://api.slack.com/apps/A08F4EW0UV9/event-subscriptions
+- Features/Slash commands https://api.slack.com/apps/A08F4EW0UV9/slash-commands?
+
+event apiet finnes på <din-url>/slack/events
