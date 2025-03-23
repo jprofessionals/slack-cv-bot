@@ -9,6 +9,7 @@ System variabler.
 - **OPENAI_API_KEY**: Accesskey til openai
 - **SLACK_BOT_TOKEN**: Slack sikkerhetsopplegg. Finnes i config av slack app Features/OAuth & Permissions
 - **SLACK_SIGNING_SECRET**: Slack sikkerhetsopplegg. Finnes i config av slack app under Settings/Basic Information
+- **FLOWCASE_API_KEY**: Bearer token for cvparter/flowcase
 - *LOGBACK_APPENDER*: Hvor skal logges skrives. STDOUT eller GCLOUD. Default til GCLOUD
 
 Applikajsonen kjører på google cloud run https://console.cloud.google.com/run/detail/europe-north2/cvbot/
@@ -25,6 +26,8 @@ threadid tas vare på i en slack tråd
 ## Lokal utvikling
 
 Appen kan kjøres lokalt og eksponeres feks via https://ngrok.com/ 
+
+`ngrok http 3000`
 
 Urler må klippes ut og limes inn i slack config for appen under
 - Features/Event Subscriptions https://api.slack.com/apps/A08F4EW0UV9/event-subscriptions

@@ -1,9 +1,9 @@
-package no.jpro.slack.cv
+package no.jpro.slack.cv.openai
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.sashirestela.cleverclient.Event
 import io.github.sashirestela.openai.SimpleOpenAI
-import io.github.sashirestela.openai.common.content.ContentPart.ContentPartTextAnnotation
+import io.github.sashirestela.openai.common.content.ContentPart
 import io.github.sashirestela.openai.domain.assistant.ThreadMessage
 import io.github.sashirestela.openai.domain.assistant.ThreadMessageRequest
 import io.github.sashirestela.openai.domain.assistant.ThreadMessageRole
@@ -13,7 +13,7 @@ import java.util.stream.Stream
 
 private val log = KotlinLogging.logger {}
 
-class SimpleOpenAIClient(
+class OpenAIClient(
     apiKey: String = System.getenv("OPENAI_API_KEY"),
     private val assistantId: String = "asst_YvsGiwk68CZ5wUKcNquxDmHz"
 ) {
@@ -29,15 +29,20 @@ class SimpleOpenAIClient(
     }
 
     fun startNewThread(message: String, onAnswer: (answer: String, threadId: String) -> Unit) {
-        chatInThread(message, createThread(), onAnswer)
+        chatInThread(message, createThread(), onAnswer,)
     }
 
-    fun chatInThread(message: String, openAiThreadId: String, onAnswer: (answer: String, threadId: String) -> Unit) {
+    fun chatInThread(
+        message: String,
+        openAiThreadId: String,
+        onAnswer: (answer: String, threadId: String) -> Unit,
+        role: ThreadMessageRole=ThreadMessageRole.USER
+    ) {
         log.debug { "Sending message to thread $openAiThreadId" }
         openAI.threadMessages()
             .create(
                 openAiThreadId, ThreadMessageRequest.builder()
-                    .role(ThreadMessageRole.USER)
+                    .role(role)
                     .content(message)
                     .build()
             )
@@ -73,7 +78,7 @@ class SimpleOpenAIClient(
                     val message = event.data as ThreadMessage
                     val content =
                         message.content[0]
-                    if (content is ContentPartTextAnnotation) {
+                    if (content is ContentPart.ContentPartTextAnnotation) {
                         onReply(content.text.value)
                     }
                 }

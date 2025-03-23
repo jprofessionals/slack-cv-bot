@@ -1,23 +1,32 @@
 package no.jpro.slack.cv
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.slack.api.bolt.App
 import com.slack.api.bolt.context.builtin.EventContext
-import com.slack.api.methods.response.users.UsersInfoResponse
 import com.slack.api.model.Message
 import com.slack.api.model.event.MessageEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.sashirestela.openai.domain.assistant.ThreadMessageRole
+import no.jpro.slack.cv.flowcase.CVReader
+import no.jpro.slack.cv.openai.OpenAIClient
 
 private const val CUSTOM_EVENT_TYPE = "cv_lest"
 
 private const val OPENAI_THREAD = "openai_thread_id"
 private val log = KotlinLogging.logger {}
 
+private val objectMapper = jacksonObjectMapper()
+    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+
 class SlackApp(val app: App = App()) {
-    private val openAIClient = SimpleOpenAIClient()
+    private val openAIClient = OpenAIClient()
+    private val cvReader = CVReader()
 
     init {
         // Rekkefølge betyr noe...
-        slashCommantLesCV()
+        slashCommandLesCV()
         pingMessage()
         replyInThread()
     }
@@ -47,15 +56,27 @@ class SlackApp(val app: App = App()) {
     }
 
 
-    private fun slashCommantLesCV() {
+    /** Starter en ny tråd i slack  */
+    private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
             val payload = req.payload
             log.debug { "Slash command  /lescv" }
             app.executorService().submit {
                 //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
-                ctx.respond { it.text("Jeg forteller en vits i stedet") }
+                ctx.respond { it.text("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}") }
+                val email = getUserEmail(payload.userId)
+                ctx.respond { it.text("Laster ned cv for ${email}") }
+                if (email.isNullOrEmpty()) {
+                    throw IllegalArgumentException()
+                }
+                val cv = cvReader.readCV(email)
+                ctx.respond { it.text("OK, Fant cvn din. Gi meg litt tid til å lese gjennom ") }
+
+//                val jsonCV= objectMapper.writeValueAsString(cv)
+
+
                 openAIClient.startNewThread(
-                    message = "Fortell en vits",
+                    message = "vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>$cv</CV> ",
                     onAnswer = { answer, openAiThread ->
                         ctx.say {
                             it
@@ -71,7 +92,7 @@ class SlackApp(val app: App = App()) {
                     }
                 )
             }
-            ctx.ack("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}")
+            ctx.ack()
         }
     }
 
@@ -131,9 +152,9 @@ class SlackApp(val app: App = App()) {
         return replies.messages;
     }
 
-    private fun getUserInfo(event: MessageEvent): UsersInfoResponse? {
-        val usersInfo = app.client.usersInfo { it.user(event.user) }
-        return usersInfo
+    private fun getUserEmail(userid: String): String? {
+        val usersInfo = app.client.usersInfo { it.user(userid) }
+        return usersInfo?.user?.profile?.email
     }
 }
 
