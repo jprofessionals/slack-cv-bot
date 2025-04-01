@@ -7,7 +7,6 @@ import com.slack.api.bolt.context.builtin.EventContext
 import com.slack.api.model.Message
 import com.slack.api.model.event.MessageEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.sashirestela.openai.domain.assistant.ThreadMessageRole
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.openai.OpenAIClient
 
@@ -70,18 +69,17 @@ class SlackApp(val app: App = App()) {
                     throw IllegalArgumentException()
                 }
                 val cv = cvReader.readCV(email)
-                ctx.respond { it.text("OK, Fant cvn din. Gi meg litt tid til å lese gjennom ") }
+                ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
 
 //                val jsonCV= objectMapper.writeValueAsString(cv)
 
 
                 openAIClient.startNewThread(
-                    message = "vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>$cv</CV> ",
+                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $cv \n</CV> ",
                     onAnswer = { answer, openAiThread ->
-                        ctx.say {
+                        ctx.respond {
                             it
                                 .text(answer)
-                                .channel(payload.userId)
                                 .metadata(
                                     Message.Metadata.builder()
                                         .eventType(CUSTOM_EVENT_TYPE)
