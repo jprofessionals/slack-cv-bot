@@ -62,20 +62,17 @@ class SlackApp(val app: App = App()) {
             log.debug { "Slash command  /lescv" }
             app.executorService().submit {
                 //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
-                ctx.respond { it.text("Ok leser deg klart og tydelig. Sjekker cv for ${payload.userName}") }
+                ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
                 val email = getUserEmail(payload.userId)
-                ctx.respond { it.text("Laster ned cv for ${email}") }
+                ctx.respond { it.text("Laster ned CV for $email") }
                 if (email.isNullOrEmpty()) {
                     throw IllegalArgumentException()
                 }
                 val cv = cvReader.readCV(email)
                 ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
-
-//                val jsonCV= objectMapper.writeValueAsString(cv)
-
-
+                val jsonCV= objectMapper.writeValueAsString(cv)
                 openAIClient.startNewThread(
-                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $cv \n</CV> ",
+                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $jsonCV \n</CV> ",
                     onAnswer = { answer, openAiThread ->
                         ctx.respond {
                             it
