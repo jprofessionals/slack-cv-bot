@@ -70,9 +70,9 @@ class SlackApp(val app: App = App()) {
                 }
                 val cv = cvReader.readCV(email)
                 ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
-                val jsonCV= objectMapper.writeValueAsString(cv)
+//                val jsonCV= objectMapper.writeValueAsString(cv)
                 openAIClient.startNewThread(
-                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $jsonCV \n</CV> ",
+                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $cv \n</CV> ",
                     onAnswer = { answer, openAiThread ->
                         ctx.respond {
                             it
