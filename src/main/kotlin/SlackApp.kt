@@ -58,40 +58,36 @@ class SlackApp(val app: App = App()) {
     /** Starter en ny tråd i slack  */
     private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
-            timing("/lescv") {
-                val payload = req.payload
-                log.debug { "Slash command  /lescv" }
-                app.executorService().submit {
-                    //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
-                    ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
-                    val email = getUserEmail(payload.userId)
-                    ctx.respond { it.text("Laster ned CV for $email") }
-                    if (email.isNullOrEmpty()) {
-                        throw IllegalArgumentException()
-                    }
-                    val cv = timing("readCV") { cvReader.readCV(email) }
-                    ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
-                    val jsonCV = timing("writeCVAsJSON") { objectMapper.writeValueAsString(cv) }
-                    timing("openAIStartNewThread") {
-                        openAIClient.startNewThread(
-                            message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $jsonCV \n</CV> ",
-                            onAnswer = { answer, openAiThread ->
-                                ctx.respond {
-                                    it
-                                        .text(answer)
-                                        .metadata(
-                                            Message.Metadata.builder()
-                                                .eventType(CUSTOM_EVENT_TYPE)
-                                                .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
-                                                .build()
-                                        )
-                                }
-                            }
-                        )
-                    }
+            val payload = req.payload
+            log.debug { "Slash command  /lescv" }
+            app.executorService().submit {
+                //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
+                ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
+                val email = getUserEmail(payload.userId)
+                ctx.respond { it.text("Laster ned CV for $email") }
+                if (email.isNullOrEmpty()) {
+                    throw IllegalArgumentException()
                 }
-                ctx.ack()
+                val cv = cvReader.readCV(email)
+                ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
+                val jsonCV= objectMapper.writeValueAsString(cv)
+                openAIClient.startNewThread(
+                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $jsonCV \n</CV> ",
+                    onAnswer = { answer, openAiThread ->
+                        ctx.respond {
+                            it
+                                .text(answer)
+                                .metadata(
+                                    Message.Metadata.builder()
+                                        .eventType(CUSTOM_EVENT_TYPE)
+                                        .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
+                                        .build()
+                                )
+                        }
+                    }
+                )
             }
+            ctx.ack()
         }
     }
 
