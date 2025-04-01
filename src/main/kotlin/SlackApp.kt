@@ -1,6 +1,7 @@
 package no.jpro.slack.cv
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.slack.api.bolt.App
 import com.slack.api.bolt.context.builtin.EventContext
@@ -17,7 +18,14 @@ private val log = KotlinLogging.logger {}
 
 private val objectMapper = jacksonObjectMapper()
     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    .registerModule(JavaTimeModule())
 
+val promptFormatString = """
+    Vurder cv mellom <CV> og </CV> og gi en kort vurdering 
+    <CV>
+    %s
+    </CV>
+"""
 
 class SlackApp(val app: App = App()) {
     private val openAIClient = OpenAIClient()
@@ -61,31 +69,34 @@ class SlackApp(val app: App = App()) {
             val payload = req.payload
             log.debug { "Slash command  /lescv" }
             app.executorService().submit {
-                //                ctx.respond{it.text("Vent ett øyeblikk mens jeg laster ned CV og gjør ting klart.")}
-                ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
-                val email = getUserEmail(payload.userId)
-                ctx.respond { it.text("Laster ned CV for $email") }
-                if (email.isNullOrEmpty()) {
-                    throw IllegalArgumentException()
-                }
-                val cv = cvReader.readCV(email)
-                ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
-//                val jsonCV= objectMapper.writeValueAsString(cv)
-                openAIClient.startNewThread(
-                    message = "Vurder cv mellom <CV> og </CV> og gi ett kort vurdering <CV>\n $cv \n</CV> ",
-                    onAnswer = { answer, openAiThread ->
-                        ctx.respond {
-                            it
-                                .text(answer)
-                                .metadata(
-                                    Message.Metadata.builder()
-                                        .eventType(CUSTOM_EVENT_TYPE)
-                                        .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
-                                        .build()
-                                )
-                        }
+                try {
+                    ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
+                    val email = getUserEmail(payload.userId)
+                    ctx.respond { it.text("Laster ned CV for $email") }
+                    if (email.isNullOrEmpty()) {
+                        throw IllegalArgumentException()
                     }
-                )
+                    val cv = cvReader.readCV(email)
+                    ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
+                    val jsonCV = objectMapper.writeValueAsString(cv)
+                    openAIClient.startNewThread(
+                        message = String.format(promptFormatString, jsonCV),
+                        onAnswer = { answer, openAiThread ->
+                            ctx.respond {
+                                it
+                                    .text(answer)
+                                    .metadata(
+                                        Message.Metadata.builder()
+                                            .eventType(CUSTOM_EVENT_TYPE)
+                                            .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
+                                            .build()
+                                    )
+                            }
+                        }
+                    )
+                } catch (e: Exception) {
+                    ctx.respond { it.text("Kunne ikke lese CV: ${e.message}") }
+                }
             }
             ctx.ack()
         }
