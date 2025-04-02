@@ -76,6 +76,12 @@ resource "google_project_iam_member" "slack-cv-bot-github-actions_iam_serviceAcc
   member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
 }
 
+resource "google_project_iam_member" "slack-cv-bot-github-actions_iam_serviceAccountUser" {
+  project = var.google_cloud_project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
+}
+
 resource "google_project_iam_member" "slack-cv-bot-github-actions_iam_roleAdmin" {
   project = var.google_cloud_project_id
   role    = "roles/iam.roleAdmin"
@@ -150,7 +156,7 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-receiver" {
 
     containers {
       name = "slack-cv-bot-receiver"
-      image = "europe-north2-docker.pkg.dev/my-page-jpro-test/jpro-slackbot/cvbot"
+      image = "europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver"
 
       ports {
         container_port = 3000
