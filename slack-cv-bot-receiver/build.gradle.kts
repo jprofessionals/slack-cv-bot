@@ -48,7 +48,7 @@ kotlin {
 
 jib {
     to {
-        image = "europe-north2-docker.pkg.dev/my-page-jpro-test/jpro-slackbot/cvbot"
+        image = "europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver"
         setCredHelper("gcr")
     }
     container{

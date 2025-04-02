@@ -2,7 +2,9 @@
 
 Slackbot som gir leser cv, laster den inn til openai og gir deg mulighet til å snakke med den etterpå
 
-## Konfig
+## [slack-cv-bot-receiver](slack-cv-bot-receiver)
+
+### Konfig
 
 System variabler. 
 
@@ -15,7 +17,7 @@ System variabler.
 Applikajsonen kjører på google cloud run https://console.cloud.google.com/run/detail/europe-north2/cvbot/
 og bygges og deployes via github actions
 
-## Implementasjon
+### Implementasjon
 
 Slack api for kotlin
 https://tools.slack.dev/java-slack-sdk/guides/getting-started-with-bolt#run-kotlin
@@ -23,7 +25,7 @@ https://tools.slack.dev/java-slack-sdk/guides/getting-started-with-bolt#run-kotl
 Applikasjonen bruker assistant og threads fra openai for å beholde en slags tilstand. Dette gjøres ved at openai
 threadid tas vare på i en slack tråd
 
-## Lokal utvikling
+### Lokal utvikling
 
 Appen kan kjøres lokalt og eksponeres feks via https://ngrok.com/ 
 
@@ -34,3 +36,11 @@ Urler må klippes ut og limes inn i slack config for appen under
 - Features/Slash commands https://api.slack.com/apps/A08F4EW0UV9/slash-commands?
 
 event apiet finnes på <din-url>/slack/events
+
+## [infrastructure](infrastructure)
+
+State bucket set up
+```shell
+gcloud storage buckets create "gs://terraform-state-slack-cv-bot-$(gcloud config get project)" --location europe-west1 --public-access-prevention
+gcloud storage buckets update "gs://terraform-state-slack-cv-bot-$(gcloud config get project)" --versioning
+```

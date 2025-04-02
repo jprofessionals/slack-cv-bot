@@ -14,10 +14,9 @@ on:
     branches: [ "main" ]
 
 env:
-  SERVICE: cvbot
   PROJECT_ID: my-page-jpro-test
-  REGION: europe-north2
-  GAR_LOCATION: europe-north2-docker.pkg.dev/my-page-jpro-test/jpro-slackbot/cvbot
+  REGION: europe
+  GAR_LOCATION: europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver
 
 jobs:
   build:
@@ -26,6 +25,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    environment: test
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCLOUD_ARTIFACT_REGISTRY_SERVICE_USER_KEY }}"
+          credentials_json: "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -62,28 +62,6 @@ jobs:
 
       - name: Push to docker
         run: docker push ${{ env.GAR_LOCATION }}
-
-      - name: 'Deploy to Cloud Run'
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: '${{ env.SERVICE }}'
-          region: '${{ env.REGION }}'
-          # NOTE: If using a pre-built image, update the image name below:
-
-          image: ${{ env.GAR_LOCATION }}
-
-
-
-    # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
-    # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.
-    #
-    # - name: Setup Gradle
-    #   uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-    #   with:
-    #     gradle-version: '8.9'
-    #
-    # - name: Build with Gradle 8.9
-    #   run: gradle build
 
   dependency-submission:
 
