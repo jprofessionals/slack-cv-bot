@@ -1,7 +1,9 @@
 name: infrastructure
 on:
-  push:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Java CI with Gradle"]
+    types:
+      - completed
 
 jobs:
   run-terraform-test:
@@ -9,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: test
     concurrency: terraform-lock-test
+
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2

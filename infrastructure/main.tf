@@ -5,7 +5,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "5.34.0"
+      version = ">= 5.34.0"
     }
   }
 }
@@ -31,6 +31,12 @@ data "google_secret_manager_secret" "CVBOT_SLACK_SIGNING_SECRET" {
 
 data "google_secret_manager_secret" "CVBOT_FLOWCASE_API_KEY" {
   secret_id = "CVBOT_FLOWCASE_API_KEY"
+}
+
+data "google_artifact_registry_docker_image" "slack-cv-bot-receiver" {
+  location      = google_artifact_registry_repository.slack-cv-bot.location
+  repository_id = google_artifact_registry_repository.slack-cv-bot.repository_id
+  image_name    = "slack-cv-bot-receiver"
 }
 
 resource "google_artifact_registry_repository" "slack-cv-bot" {
@@ -156,7 +162,7 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-receiver" {
 
     containers {
       name = "slack-cv-bot-receiver"
-      image = "europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver"
+      image = data.google_artifact_registry_docker_image.slack-cv-bot-receiver.self_link
 
       ports {
         container_port = 3000
