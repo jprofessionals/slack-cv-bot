@@ -36,7 +36,7 @@ data "google_secret_manager_secret" "CVBOT_FLOWCASE_API_KEY" {
 data "google_artifact_registry_docker_image" "slack-cv-bot-receiver" {
   location      = google_artifact_registry_repository.slack-cv-bot.location
   repository_id = google_artifact_registry_repository.slack-cv-bot.repository_id
-  image_name    = "slack-cv-bot-receiver"
+  image_name    = "slack-cv-bot-receiver:latest"
 }
 
 resource "google_artifact_registry_repository" "slack-cv-bot" {
