@@ -16,7 +16,8 @@ on:
 env:
   PROJECT_ID: my-page-jpro-test
   REGION: europe
-  GAR_LOCATION: europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver
+  RECEIVER_IMAGE: europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-receiver
+  HANDLER_IMAGE: europe-docker.pkg.dev/my-page-jpro-test/slack-cv-bot/slack-cv-bot-handler
 
 jobs:
   build:
@@ -60,8 +61,11 @@ jobs:
       - name: Build with Jib
         run: ./gradlew build jibDockerBuild
 
-      - name: Push to docker
-        run: docker push ${{ env.GAR_LOCATION }}
+      - name: Push receiver to docker
+        run: docker push ${{ env.RECEIVER_IMAGE }}
+
+      - name: Push handler to docker
+        run: docker push ${{ env.HANDLER_IMAGE }}
 
   dependency-submission:
 

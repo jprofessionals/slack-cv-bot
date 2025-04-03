@@ -1,13 +1,9 @@
 package no.jpro.slack.cv.flowcase
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import no.jpro.slack.cv.objectMapper
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
-
-private val objectMapper = jacksonObjectMapper()
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
 class FlowcaseClient(token: String, private val baseUrl: String = " https://jpro.flowcase.com") {
     private val httpClient = OkHttpClient.Builder()

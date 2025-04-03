@@ -1,0 +1,21 @@
+<configuration>
+    <appender name="GCLOUD" class="com.google.cloud.logging.logback.LoggingAppender">
+        <!-- Optional : filter logs at or above a level -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%thread] %highlight(%-5level) %cyan(%logger{15}) -%msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="no.jpro" level="debug"/>
+
+    <!-- Setter logger til å bruke standard out med env variable LOGBACK_APPENDER=STDOUT -->
+    <root level="info">
+        <appender-ref ref="${LOGBACK_APPENDER:-GCLOUD}" />
+    </root>
+</configuration>

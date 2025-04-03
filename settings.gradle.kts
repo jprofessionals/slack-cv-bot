@@ -4,3 +4,4 @@ plugins {
 rootProject.name = "slack-cv-bot-kotlin"
 
 include("slack-cv-bot-receiver")
+include("slack-cv-bot-handler")
