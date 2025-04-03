@@ -27,7 +27,12 @@ dependencies {
 
     implementation ("io.github.oshai:kotlin-logging-jvm:7.0.3")
     implementation("ch.qos.logback:logback-classic:1.5.17")
-    implementation("com.google.cloud:google-cloud-logging-logback:0.131.11-alpha")
+
+    // Google Cloud
+    implementation(platform("com.google.cloud:libraries-bom:26.56.0"))
+    implementation("com.google.cloud:google-cloud-logging-logback")
+    implementation("com.google.cloud:google-cloud-pubsub")
+
     // Openai
     implementation ("io.github.sashirestela:simple-openai:3.19.3")
     /* OkHttp dependency is optional if you decide to use it with simple-openai */

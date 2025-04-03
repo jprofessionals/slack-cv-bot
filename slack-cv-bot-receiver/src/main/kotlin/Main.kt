@@ -12,3 +12,9 @@ fun main() {
     server.start() // http://localhost:3000/slack/events
 }
 
+fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
+    ?: throw Exception("$variableName not defined in environment variables")
+
+fun getEnvVariableOrDefault(variableName: String, default: String) = System.getenv().get(variableName)
+    ?: default
+

@@ -1,51 +1,15 @@
 package no.jpro.slack.cv
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.slack.api.bolt.App
-import com.slack.api.bolt.context.builtin.EventContext
-import com.slack.api.model.Message
-import com.slack.api.model.event.MessageEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.jpro.slack.cv.flowcase.CVReader
-import no.jpro.slack.cv.openai.OpenAIClient
 
-private const val CUSTOM_EVENT_TYPE = "cv_lest"
-
-private const val OPENAI_THREAD = "openai_thread_id"
 private val log = KotlinLogging.logger {}
 
-private val objectMapper = jacksonObjectMapper()
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    .registerModule(JavaTimeModule())
-
-val promptFormatString = """
-    Vurder cv mellom <CV> og </CV> og gi en kort vurdering 
-    <CV>
-    %s
-    </CV>
-"""
-
 class SlackApp(val app: App = App()) {
-    private val openAIClient = OpenAIClient()
-    private val cvReader = CVReader()
 
     init {
-        // Rekkefølge betyr noe...
         slashCommandLesCV()
         pingMessage()
-        replyInThread()
-    }
-
-    private fun replyInThread() {
-        app.event(MessageEvent::class.java) { payload, ctx ->
-            val event = payload.event
-            app.executorService().submit {
-                replyMessageInThread(event, ctx)
-            }
-            ctx.ack()
-        }
     }
 
     private fun pingMessage() {
@@ -66,96 +30,28 @@ class SlackApp(val app: App = App()) {
     /** Starter en ny tråd i slack  */
     private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
-            val payload = req.payload
-            log.debug { "Slash command  /lescv" }
-            app.executorService().submit {
-                try {
-                    ctx.respond { it.text("OK, leser deg klart og tydelig. Sjekker CV for ${payload.userName}") }
-                    val email = getUserEmail(payload.userId)
-                    ctx.respond { it.text("Laster ned CV for $email") }
-                    if (email.isNullOrEmpty()) {
-                        throw IllegalArgumentException()
-                    }
-                    val cv = cvReader.readCV(email)
-                    ctx.respond { it.text("OK, Fant CVen din. Gi meg litt tid til å lese gjennom.") }
-                    val jsonCV = objectMapper.writeValueAsString(cv)
-                    openAIClient.startNewThread(
-                        message = String.format(promptFormatString, jsonCV),
-                        onAnswer = { answer, openAiThread ->
-                            ctx.respond {
-                                it
-                                    .text(answer)
-                                    .metadata(
-                                        Message.Metadata.builder()
-                                            .eventType(CUSTOM_EVENT_TYPE)
-                                            .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
-                                            .build()
-                                    )
-                            }
-                        }
-                    )
-                } catch (e: Exception) {
-                    ctx.respond { it.text("Kunne ikke lese CV: ${e.message}") }
-                }
+            log.info { "Slash command  /lescv" }
+            val say = ctx.say {
+                it.channel(req.payload.channelId)
+                    .text("OK, leser deg klart og tydelig. Sjekker CV for ${req.payload.userName}")
+            }
+            val userEmail = getUserEmail(req.payload.userId)
+            if (userEmail == null) {
+                ctx.say { it.threadTs(say.ts).text("Fant ikke epost for ${req.payload.userName}") }
+                return@command ctx.ack()
+            }
+            log.debug { "Building message" }
+            val slashCommand = SlackSlashCommand(say.ts, userEmail)
+            val message = pubsubMessage(slashCommand)
+            log.debug { "Ready to publish message" }
+            try {
+                val messageId = send(message)
+                log.info { "Message published to PubSub, id=$messageId" }
+            } catch (e: Exception) {
+                log.error(e) { "Message send failed" }
             }
             ctx.ack()
         }
-    }
-
-
-    private fun replyMessageInThread(
-        event: MessageEvent,
-        ctx: EventContext
-    ) {
-//        val usersInfo = getUserInfo(event)
-//        ctx.logger.info("event result - ts {} threadts {} channel {}", event.ts, event.threadTs, event.channel)
-//        ctx.say("<@${event.user}> / ${usersInfo?.user?.profile?.email} Jeg forstår ikke hva du mener")
-        val replies = history(event)
-//        ctx.logger.info("replies {}", replies?.map { "${it.user}  ${it.text}\n" })
-        val openAiThread = replies?.map { it.metadata }
-            ?.first { it.eventType == CUSTOM_EVENT_TYPE }
-            ?.eventPayload?.get(OPENAI_THREAD).toString()
-        log.debug { "replies to openai thread $openAiThread" }
-        if (openAiThread.isBlank()) {
-            ctx.say {
-                it
-                    .text("Finner ikke noe openai tråd. Så jeg vet ikke helt hva du holder på med")
-                    .threadTs(event.threadTs ?: event.ts)
-                    .channel(event.channel)
-            }
-            return
-        }
-
-        openAIClient.chatInThread(
-            message = event.text,
-            openAiThreadId = openAiThread,
-            onAnswer = { answer, threadId ->
-                ctx.say {
-                    it
-                        .text(answer)
-                        .threadTs(event.threadTs ?: event.ts)
-                        .channel(event.channel)
-
-                }
-            }
-        )
-
-//        ctx.say {
-//            it
-//                .text("jasså du sier ${event.text}")
-//                .threadTs(event.threadTs ?: event.ts)
-//                .channel(event.channel)
-//        }
-    }
-
-    private fun history(event: MessageEvent): List<Message>? {
-
-        val replies = app.client.conversationsReplies {
-            it.ts(event.threadTs)
-                .channel(event.channel)
-                .includeAllMetadata(true)
-        }
-        return replies.messages;
     }
 
     private fun getUserEmail(userid: String): String? {
@@ -163,4 +59,3 @@ class SlackApp(val app: App = App()) {
         return usersInfo?.user?.profile?.email
     }
 }
-
