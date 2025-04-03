@@ -31,15 +31,20 @@ class SlackApp(val app: App = App()) {
     private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
             log.info { "Slash command  /lescv" }
-            val say = ctx.say {
-                it.channel(req.payload.channelId)
-                    .text("OK, leser deg klart og tydelig. Sjekker CV for ${req.payload.userName}")
-            }
             val userEmail = getUserEmail(req.payload.userId)
             if (userEmail == null) {
-                ctx.say { it.threadTs(say.ts).text("Fant ikke epost for ${req.payload.userName}") }
+                ctx.respond("Jeg fant ikke epost for ${req.payload.userName}")
                 return@command ctx.ack()
             }
+            val say = ctx.say {
+                it.channel(req.payload.channelId)
+                    .text("Jeg sjekker CV for ${req.payload.userName} (${userEmail})")
+            }
+            if (!say.isOk) {
+                ctx.respond("Jeg har ikke tilgang til å sende fullstendige svar til kanalen. Jeg må være medlem. (${say.error})")
+                return@command ctx.ack()
+            }
+            log.debug { "say.ts=${say.ts}" }
             log.debug { "Building message" }
             val slashCommand = SlackSlashCommand(say.ts, userEmail)
             val message = pubsubMessage(slashCommand)
