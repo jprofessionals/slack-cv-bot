@@ -102,7 +102,7 @@ resource "google_project_iam_member" "slack-cv-bot-github-actions_resourcemanage
 
 resource "google_project_iam_member" "slack-cv-bot-github-actions_pubsub" {
   project = var.google_cloud_project_id
-  role    = "roles/pubsub.editor"
+  role    = "roles/pubsub.admin"
   member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
 }
 
