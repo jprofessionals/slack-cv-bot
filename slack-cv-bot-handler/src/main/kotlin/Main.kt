@@ -6,9 +6,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.slack.api.Slack
 import com.slack.api.model.Message
+import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.openai.OpenAIClient
+import java.net.InetSocketAddress
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -30,6 +32,9 @@ private const val OPENAI_THREAD = "openai_thread_id"
 
 fun main() {
     log.info { "Starting slack-cv-bot-handler" }
+
+    startHttpServer()
+
     receive { slackSlashCommand ->
         try {
             slack.chatPostMessage {
@@ -62,6 +67,16 @@ fun main() {
             log.error(e) { "Noe gikk galt" }
         }
     }
+}
+
+fun startHttpServer() {
+    val httpServer: HttpServer = HttpServer.create(InetSocketAddress(8080), 16)
+    httpServer.createContext("/") { exchange ->
+        log.info { "Handling request, method=${exchange.requestMethod}, path=${exchange.httpContext.path}" }
+        exchange.sendResponseHeaders(200, 0)
+        exchange.responseBody.close()
+    }
+    httpServer.start()
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
