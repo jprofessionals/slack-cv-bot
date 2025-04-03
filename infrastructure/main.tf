@@ -256,6 +256,22 @@ resource "google_pubsub_subscription" "slack-cv-bot-handler" {
   expiration_policy {
     ttl = ""
   }
+  push_config {
+    push_endpoint = google_cloud_run_v2_service.slack-cv-bot-handler.uri
+    oidc_token {
+      service_account_email = google_service_account.slack-cv-bot-handler.email
+    }
+  }
+}
+
+resource "google_cloud_run_service_iam_binding" "allow_pubsub" {
+  location = google_cloud_run_v2_service.slack-cv-bot-handler.location
+  service  = google_cloud_run_v2_service.slack-cv-bot-handler.name
+  role     = "roles/run.invoker"
+
+  members = [
+    "serviceAccount:${google_service_account.slack-cv-bot-handler.email}"
+  ]
 }
 
 resource "google_pubsub_subscription_iam_binding" "slack-cv-bot-handler" {
@@ -291,14 +307,6 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-handler" {
       name = "slack-cv-bot-handler"
       image = data.google_artifact_registry_docker_image.slack-cv-bot-handler.self_link
 
-      env {
-        name = "GOOGLE_CLOUD_PROJECT_NAME"
-        value = var.google_cloud_project_id
-      }
-      env {
-        name = "SUBSCRIPTION_ID"
-        value = google_pubsub_subscription.slack-cv-bot-handler.name
-      }
       env {
         name = "OPENAI_API_KEY"
         value_source {

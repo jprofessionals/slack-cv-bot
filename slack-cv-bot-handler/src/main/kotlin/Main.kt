@@ -10,7 +10,11 @@ import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.openai.OpenAIClient
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.net.InetSocketAddress
+import java.util.*
+import java.util.stream.Collectors
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -32,51 +36,55 @@ private const val OPENAI_THREAD = "openai_thread_id"
 
 fun main() {
     log.info { "Starting slack-cv-bot-handler" }
-
-    startHttpServer()
-
-    receive { slackSlashCommand ->
-        try {
-            slack.chatPostMessage {
-                it.threadTs(slackSlashCommand.threadTs)
-                    .text("Henter CV fra Flowcase")
-            }
-            val cv = cvReader.readCV(slackSlashCommand.userEmail)
-            val jsonCV = objectMapper.writeValueAsString(cv)
-            slack.chatPostMessage {
-                it.threadTs(slackSlashCommand.threadTs)
-                    .text("Sender CV til OpenAI for vurdering")
-            }
-            openAIClient.startNewThread(
-                message = String.format(promptFormatString, jsonCV),
-                onAnswer = { answer, openAiThread ->
-                    slack.chatPostMessage {
-                        it
-                            .threadTs(slackSlashCommand.threadTs)
-                            .text(answer)
-                            .metadata(
-                                Message.Metadata.builder()
-                                    .eventType(CUSTOM_EVENT_TYPE)
-                                    .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
-                                    .build()
-                            )
-                    }
-                }
-            )
-        } catch (e: Exception) {
-            log.error(e) { "Noe gikk galt" }
-        }
-    }
-}
-
-fun startHttpServer() {
     val httpServer: HttpServer = HttpServer.create(InetSocketAddress(8080), 16)
     httpServer.createContext("/") { exchange ->
         log.info { "Handling request, method=${exchange.requestMethod}, path=${exchange.httpContext.path}" }
+        try {
+            BufferedReader(InputStreamReader(exchange.requestBody)).use { bufferedReader ->
+                val bodyAsString = bufferedReader.lines().collect(Collectors.joining("\n"))
+                log.info { "Body: '$bodyAsString'" }
+                val message: PubSubBody = objectMapper.readValue(bodyAsString, PubSubBody::class.java)
+                val encodedData = message.message.data
+                val data = String(Base64.getDecoder().decode(encodedData))
+                val slackSlashCommand = objectMapper.readValue(data, SlackSlashCommand::class.java)
+                handleCommand(slackSlashCommand)
+            }
+        } catch (e: java.lang.Exception) {
+            log.warn(e) { "Error processing request" }
+        }
         exchange.sendResponseHeaders(200, 0)
         exchange.responseBody.close()
     }
     httpServer.start()
+}
+
+fun handleCommand(slackSlashCommand: SlackSlashCommand) {
+    slack.chatPostMessage {
+        it.threadTs(slackSlashCommand.threadTs)
+            .text("Henter CV fra Flowcase")
+    }
+    val cv = cvReader.readCV(slackSlashCommand.userEmail)
+    val jsonCV = objectMapper.writeValueAsString(cv)
+    slack.chatPostMessage {
+        it.threadTs(slackSlashCommand.threadTs)
+            .text("Sender CV til OpenAI for vurdering")
+    }
+    openAIClient.startNewThread(
+        message = String.format(promptFormatString, jsonCV),
+        onAnswer = { answer, openAiThread ->
+            slack.chatPostMessage {
+                it
+                    .threadTs(slackSlashCommand.threadTs)
+                    .text(answer)
+                    .metadata(
+                        Message.Metadata.builder()
+                            .eventType(CUSTOM_EVENT_TYPE)
+                            .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
+                            .build()
+                    )
+            }
+        }
+    )
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
