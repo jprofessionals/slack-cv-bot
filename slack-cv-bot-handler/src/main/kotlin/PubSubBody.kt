@@ -9,7 +9,7 @@ data class PubSubBody(val message: PubsubMessage) {
     @JvmRecord
     data class PubsubMessage(
         val data: String,
-        val attributes: Map<String, String>,
+        val attributes: Map<String, String> = emptyMap(),
         val messageId: String,
         val publishTime: String
     )
