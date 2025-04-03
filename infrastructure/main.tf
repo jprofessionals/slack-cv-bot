@@ -216,3 +216,12 @@ resource "google_cloud_run_service_iam_binding" "default" {
     "allUsers"
   ]
 }
+
+resource "google_pubsub_topic" "slack-events" {
+  name = "slack-events"
+
+  message_retention_duration = "${31*24*60*60}s"
+  message_storage_policy {
+    allowed_persistence_regions = [var.google_cloud_region]
+  }
+}
