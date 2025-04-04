@@ -6,9 +6,14 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.slack.api.Slack
 import com.slack.api.model.Message
+import com.slack.api.model.block.ActionsBlock
+import com.slack.api.model.block.SectionBlock
+import com.slack.api.model.block.composition.PlainTextObject
+import com.slack.api.model.block.element.ButtonElement
 import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.cv.flowcase.CVReader
+import no.jpro.slack.cv.flowcase.FlowcaseService
 import no.jpro.slack.cv.openai.OpenAIClient
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -24,6 +29,10 @@ private val log = KotlinLogging.logger {}
 private val openAIClient = OpenAIClient()
 private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
+
+private val whichSectionQuestion = SectionBlock.builder()
+    .text(PlainTextObject("Hvilken seksjon ønsker du jeg skal vurdere?", false))
+    .build()
 
 private val promptFormatString = """
     Vurder cv mellom <CV> og </CV> og gi en kort vurdering
@@ -99,6 +108,13 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
     }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
 
+    slack.chatPostMessage {
+        it
+            .channel(slackSlashCommand.slackThread.channelId)
+            .threadTs(slackSlashCommand.slackThread.threadTs)
+            .blocks(listOf(whichSectionQuestion, createActionBlock(cv)))
+    }
+
     val summary = cv.key_qualifications.find { !it.disabled }?.long_description?.no?:""//TODO: what if no summary
     val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
 
@@ -127,6 +143,23 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
             }
         }
     )
+}
+
+private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
+    val projectElements = cv.project_experiences.map { projectExperience ->
+        ButtonElement.builder()
+            .text(PlainTextObject(projectExperience.customer.no, false))
+            .actionId(UUID.randomUUID().toString())
+            .build()
+    }
+    val elements = listOf(
+        ButtonElement.builder()
+            .text(PlainTextObject("Sammendrag", false))
+            .actionId(UUID.randomUUID().toString())
+            .build()
+    )
+        .plus(projectElements)
+    return ActionsBlock.builder().blockId(UUID.randomUUID().toString()).elements(elements).build()
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)

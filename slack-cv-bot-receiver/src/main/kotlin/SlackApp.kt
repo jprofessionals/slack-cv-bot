@@ -10,6 +10,7 @@ class SlackApp(val app: App = App()) {
     init {
         slashCommandLesCV()
         pingMessage()
+        blockAction()
     }
 
     private fun pingMessage() {
@@ -25,7 +26,6 @@ class SlackApp(val app: App = App()) {
             ctx.ack()
         }
     }
-
 
     /** Starter en ny tråd i slack  */
     private fun slashCommandLesCV() {
@@ -55,6 +55,13 @@ class SlackApp(val app: App = App()) {
             } catch (e: Exception) {
                 log.error(e) { "Message send failed" }
             }
+            ctx.ack()
+        }
+    }
+
+    private fun blockAction() {
+        app.blockAction(".*") { req, ctx ->
+            log.debug { "req=$req, ctx=$ctx" }
             ctx.ack()
         }
     }
