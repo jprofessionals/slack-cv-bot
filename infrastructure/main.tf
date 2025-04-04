@@ -234,12 +234,6 @@ resource "google_secret_manager_secret_iam_member" "slack-cv-bot-handler-CVBOT_S
   member    = "serviceAccount:${google_service_account.slack-cv-bot-handler.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "slack-cv-bot-handler-CVBOT_SLACK_SIGNING_SECRET-access" {
-  secret_id = data.google_secret_manager_secret.CVBOT_SLACK_SIGNING_SECRET.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.slack-cv-bot-handler.email}"
-}
-
 resource "google_secret_manager_secret_iam_member" "slack-cv-bot-handler-CVBOT_FLOWCASE_API_KEY-access" {
   secret_id = data.google_secret_manager_secret.CVBOT_FLOWCASE_API_KEY.id
   role      = "roles/secretmanager.secretAccessor"
@@ -329,15 +323,6 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-handler" {
         value_source {
           secret_key_ref {
             secret = data.google_secret_manager_secret.CVBOT_SLACK_TOKEN.secret_id
-            version = "latest"
-          }
-        }
-      }
-      env {
-        name = "SLACK_SIGNING_SECRET"
-        value_source {
-          secret_key_ref {
-            secret = data.google_secret_manager_secret.CVBOT_SLACK_SIGNING_SECRET.secret_id
             version = "latest"
           }
         }
