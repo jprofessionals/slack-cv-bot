@@ -91,13 +91,12 @@ fun main() {
 }
 
 fun handleCommand(slackSlashCommand: SlackSlashCommand) {
-    val message = slack.chatPostMessage {
+    slack.chatPostMessage {
         it
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
             .text("Henter CV fra Flowcase")
     }
-    log.info { "Message result: $message" }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
 
     val summary = cv.key_qualifications.find { !it.disabled }?.long_description?.no?:""//TODO: what if no summary
