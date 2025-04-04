@@ -92,7 +92,9 @@ fun main() {
 
 fun handleCommand(slackSlashCommand: SlackSlashCommand) {
     slack.chatPostMessage {
-        it.threadTs(slackSlashCommand.threadTs)
+        it
+            .channel(slackSlashCommand.slackThread.channelId)
+            .threadTs(slackSlashCommand.slackThread.threadTs)
             .text("Henter CV fra Flowcase")
     }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
@@ -101,16 +103,20 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
     val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
 
     slack.chatPostMessage {
-        it.threadTs(slackSlashCommand.threadTs)
+        it
+            .channel(slackSlashCommand.slackThread.channelId)
+            .threadTs(slackSlashCommand.slackThread.threadTs)
             .text("Sender sammendrag til OpenAI for vurdering")
     }
 
     openAIClient.startNewThread(
         message = String.format(summaryPromtFormatString, summary, projects),
         onAnswer = { answer, openAiThread ->
+            log.info { "Received answer from OpenAI" }
             slack.chatPostMessage {
                 it
-                    .threadTs(slackSlashCommand.threadTs)
+                    .channel(slackSlashCommand.slackThread.channelId)
+                    .threadTs(slackSlashCommand.slackThread.threadTs)
                     .text(answer)
                     .metadata(
                         Message.Metadata.builder()

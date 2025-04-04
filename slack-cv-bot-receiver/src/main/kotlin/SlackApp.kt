@@ -46,7 +46,7 @@ class SlackApp(val app: App = App()) {
             }
             log.debug { "say.ts=${say.ts}" }
             log.debug { "Building message" }
-            val slashCommand = SlackSlashCommand(say.ts, userEmail)
+            val slashCommand = SlackSlashCommand(SlackThread(say.channel, say.ts), userEmail)
             val message = pubsubMessage(slashCommand)
             log.debug { "Ready to publish message" }
             try {
