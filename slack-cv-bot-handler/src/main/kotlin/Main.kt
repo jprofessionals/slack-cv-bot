@@ -147,7 +147,10 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
 }
 
 private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
-    val projectElements = cv.project_experiences.map { projectExperience ->
+    val projectElements = cv.project_experiences
+        .sortedWith(compareBy({ it.year_from }, { it.month_from }))
+        .reversed()
+        .map { projectExperience ->
         ButtonElement.builder()
             .text(PlainTextObject(projectExperience.description.no, false))
             .actionId(UUID.randomUUID().toString())
