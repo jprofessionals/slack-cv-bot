@@ -156,6 +156,10 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-receiver" {
         container_port = 3000
       }
 
+      resources {
+        startup_cpu_boost = true
+      }
+
       env {
         name = "GOOGLE_CLOUD_PROJECT_NAME"
         value = var.google_cloud_project_id
@@ -306,6 +310,10 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-handler" {
     containers {
       name = "slack-cv-bot-handler"
       image = data.google_artifact_registry_docker_image.slack-cv-bot-handler.self_link
+
+      resources {
+        startup_cpu_boost = true
+      }
 
       env {
         name = "OPENAI_API_KEY"
