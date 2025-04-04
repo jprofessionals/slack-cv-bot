@@ -60,7 +60,7 @@ class SlackApp(val app: App = App()) {
     }
 
     private fun blockAction() {
-        app.blockAction(".*") { req, ctx ->
+        app.blockAction("sectionSelection") { req, ctx ->
             log.debug { "req=$req, ctx=$ctx" }
             ctx.ack()
         }

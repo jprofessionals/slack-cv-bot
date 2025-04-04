@@ -150,16 +150,16 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
     val projectElements = cv.project_experiences
         .sortedWith(compareBy({ it.year_from }, { it.month_from }))
         .reversed()
-        .map { projectExperience ->
+        .mapIndexed { i, projectExperience ->
         ButtonElement.builder()
             .text(PlainTextObject(projectExperience.description.no, false))
-            .actionId(UUID.randomUUID().toString())
+            .actionId(i.toString())
             .build()
     }
     val elements = listOf(
         ButtonElement.builder()
             .text(PlainTextObject("Sammendrag", false))
-            .actionId(UUID.randomUUID().toString())
+            .actionId("sectionSelection")
             .build()
     )
         .plus(projectElements)
