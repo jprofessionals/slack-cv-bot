@@ -1,6 +1,6 @@
 package flowcase
 
-import no.jpro.slack.cv.flowcase.FlowcaseClient
+import no.jpro.slack.cv.flowcase.FlowcaseService
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test
 class FlowcaseClientIT {
 
 
-    val client = FlowcaseClient(token = "Token mot CVPartner")
+    val client = FlowcaseService.connect(token = "Token mot CVPartner")
 
     @Test
     fun `getCV`() {
-        println(client.getCV("hp@jpro.no"))
+        println(client.user("hp@jpro.no"))
     }
 }

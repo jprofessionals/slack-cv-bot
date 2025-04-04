@@ -39,6 +39,9 @@ dependencies {
     /* OkHttp dependency is optional if you decide to use it with simple-openai */
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
+    //OpenFeign
+    implementation("io.github.openfeign:feign-core:13.5")
+    implementation("io.github.openfeign:feign-gson:13.5")
 }
 
 application {
