@@ -108,13 +108,14 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
     }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
 
-    slack.chatPostMessage {
+    val message = slack.chatPostMessage {
         it
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
             .text(whichSectionQuestion.text.text)
             .blocks(listOf(whichSectionQuestion, createActionBlock(cv)))
     }
+    log.debug { message }
 
     val summary = cv.key_qualifications.find { !it.disabled }?.long_description?.no?:""//TODO: what if no summary
     val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
