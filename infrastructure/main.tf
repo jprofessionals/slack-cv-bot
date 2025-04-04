@@ -108,7 +108,7 @@ resource "google_project_iam_member" "slack-cv-bot-github-actions_pubsub" {
 
 resource "google_project_iam_member" "slack-cv-bot-github-actions_secretmanager" {
   project = var.google_cloud_project_id
-  role    = "roles/secretmanager.viewer"
+  role    = "roles/secretmanager.admin"
   member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
 }
 
