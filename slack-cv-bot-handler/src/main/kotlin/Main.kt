@@ -112,6 +112,7 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
         it
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
+            .text(whichSectionQuestion.text.text)
             .blocks(listOf(whichSectionQuestion, createActionBlock(cv)))
     }
 
@@ -148,7 +149,7 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
 private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
     val projectElements = cv.project_experiences.map { projectExperience ->
         ButtonElement.builder()
-            .text(PlainTextObject(projectExperience.customer.no, false))
+            .text(PlainTextObject(projectExperience.description.no, false))
             .actionId(UUID.randomUUID().toString())
             .build()
     }
