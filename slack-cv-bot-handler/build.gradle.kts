@@ -26,7 +26,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
 
-    implementation ("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation ("io.github.oshai:kotlin-logging-jvm:7.0.6")
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
     // Google Cloud
