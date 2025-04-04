@@ -147,23 +147,30 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
 }
 
 private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
-    val projectElements = cv.project_experiences
+    val keyQualificationElements = cv.key_qualifications
+        .filter { !it.disabled }
+        .map { keyQualification ->
+            ButtonElement.builder()
+                .text(PlainTextObject("Sammendrag", false))
+                .actionId("sectionSelection")
+                .value("key_qualification-${keyQualification._id}")
+                .build()
+
+        }
+    val projectExperienceElements = cv.project_experiences
+        .filter { !it.disabled }
         .sortedWith(compareBy({ it.year_from }, { it.month_from }))
         .reversed()
-        .mapIndexed { i, projectExperience ->
-        ButtonElement.builder()
-            .text(PlainTextObject(projectExperience.description.no, false))
-            .actionId(i.toString())
-            .build()
-    }
-    val elements = listOf(
-        ButtonElement.builder()
-            .text(PlainTextObject("Sammendrag", false))
-            .actionId("sectionSelection")
-            .build()
-    )
-        .plus(projectElements)
-    return ActionsBlock.builder().blockId(UUID.randomUUID().toString()).elements(elements).build()
+        .map { projectExperience ->
+            ButtonElement.builder()
+                .text(PlainTextObject(projectExperience.description.no, false))
+                .actionId("sectionSelection")
+                .value("project_experience-${projectExperience._id}")
+                .build()
+        }
+    return ActionsBlock.builder()
+        .elements(keyQualificationElements.plus(projectExperienceElements))
+        .build()
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)

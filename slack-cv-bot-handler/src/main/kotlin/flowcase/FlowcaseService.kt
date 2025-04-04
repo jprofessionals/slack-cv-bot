@@ -24,12 +24,14 @@ interface FlowcaseService {
     )
 
     data class KeyQualifications(
+        val _id: String,
         val disabled: Boolean,
         val tag_line: TranslatedValue,
         val long_description: TranslatedValue,
     )
 
     data class ProjectExperiences(
+        val _id: String,
         val disabled: Boolean,
         val customer: TranslatedValue,
         val description: TranslatedValue,
