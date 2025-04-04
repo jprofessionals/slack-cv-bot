@@ -153,7 +153,6 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
         .map { keyQualification ->
             ButtonElement.builder()
                 .text(PlainTextObject("Sammendrag", false))
-                .actionId("sectionSelection")
                 .value("key_qualification-${keyQualification._id}")
                 .build()
 
@@ -165,11 +164,11 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
         .map { projectExperience ->
             ButtonElement.builder()
                 .text(PlainTextObject(projectExperience.description.no, false))
-                .actionId("sectionSelection")
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }
     return ActionsBlock.builder()
+        .blockId("sectionSelection")
         .elements(keyQualificationElements.plus(projectExperienceElements))
         .build()
 }
