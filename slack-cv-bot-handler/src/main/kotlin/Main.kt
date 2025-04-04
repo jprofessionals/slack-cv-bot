@@ -23,7 +23,7 @@ val objectMapper: ObjectMapper = jacksonObjectMapper()
 private val log = KotlinLogging.logger {}
 private val openAIClient = OpenAIClient()
 private val cvReader = CVReader()
-private val slack = Slack.getInstance().methods()
+private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
 
 private val promptFormatString = """
     Vurder cv mellom <CV> og </CV> og gi en kort vurdering
