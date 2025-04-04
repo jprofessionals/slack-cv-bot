@@ -2,6 +2,7 @@ package no.jpro.slack.cv
 
 import com.slack.api.bolt.App
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger {}
 
@@ -60,8 +61,8 @@ class SlackApp(val app: App = App()) {
     }
 
     private fun blockAction() {
-        app.blockAction("sectionSelection") { req, ctx ->
-            log.debug { "req=$req, ctx=$ctx" }
+        app.blockAction(Pattern.compile("^.*$")) { req, ctx ->
+            log.debug { "req.payload.actions=${req.payload.actions},req=${req.payload.message}" }
             ctx.ack()
         }
     }
