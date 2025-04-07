@@ -62,12 +62,12 @@ class SlackApp(val app: App = App()) {
 
     private fun blockAction() {
         app.blockAction(Pattern.compile("^.*$")) { req, ctx ->
-            log.debug { "req.payload.actions=${req.payload.actions},req=${req.payload.message}" }
+            log.debug { "req.payload.actions=${req.payload.actions},req.payload.message=${req.payload.message},req.payload.channel=${req.payload.channel}" }
             req.payload.actions.forEach { action ->
                 log.debug { "Building message" }
                 val (sectionTypeString, sectionId) = action.value.split("-")
                 val sectionType = SectionType.entries.first { it.name.contentEquals(sectionTypeString, true) }
-                val sectionSelection = SectionSelection(SlackThread(req.payload.message.channel, req.payload.message.threadTs), sectionId, sectionType)
+                val sectionSelection = SectionSelection(SlackThread(req.payload.channel.id, req.payload.message.threadTs), sectionId, sectionType)
                 val message = pubsubMessage(sectionSelection)
                 trySend(message)
             }
