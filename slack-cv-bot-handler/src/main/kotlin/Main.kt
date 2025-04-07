@@ -30,8 +30,9 @@ private val openAIClient = OpenAIClient()
 private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
 
-private val whichSectionQuestion = SectionBlock.builder()
-    .text(PlainTextObject("Hvilken seksjon ønsker du jeg skal vurdere?", false))
+private val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
+private val whichSectionQuestionBlock = SectionBlock.builder()
+    .text(PlainTextObject(whichSectionQuestion, false))
     .build()
 
 private val promptFormatString = """
@@ -112,8 +113,8 @@ fun handleCommand(slackSlashCommand: SlackSlashCommand) {
         it
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
-            .text(whichSectionQuestion.text.text)
-            .blocks(listOf(whichSectionQuestion, createActionBlock(cv)))
+            .text(whichSectionQuestion)
+            .blocks(listOf(whichSectionQuestionBlock, createActionBlock(cv)))
     }
     log.debug { message }
 
