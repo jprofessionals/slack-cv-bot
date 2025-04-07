@@ -1,7 +1,12 @@
 package no.jpro.slack.cv
 
+import com.google.pubsub.v1.PubsubMessage
 import com.slack.api.bolt.App
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.jpro.slack.SectionSelection
+import no.jpro.slack.SectionType
+import no.jpro.slack.SlackThread
+import no.jpro.slack.SlashCommand
 import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger {}
@@ -47,15 +52,10 @@ class SlackApp(val app: App = App()) {
             }
             log.debug { "say.ts=${say.ts}" }
             log.debug { "Building message" }
-            val slashCommand = SlackSlashCommand(SlackThread(say.channel, say.ts), userEmail)
+            val slashCommand = SlashCommand(SlackThread(say.channel, say.ts), userEmail)
             val message = pubsubMessage(slashCommand)
             log.debug { "Ready to publish message" }
-            try {
-                val messageId = send(message)
-                log.info { "Message published to PubSub, id=$messageId" }
-            } catch (e: Exception) {
-                log.error(e) { "Message send failed" }
-            }
+            trySend(message)
             ctx.ack()
         }
     }
@@ -63,7 +63,24 @@ class SlackApp(val app: App = App()) {
     private fun blockAction() {
         app.blockAction(Pattern.compile("^.*$")) { req, ctx ->
             log.debug { "req.payload.actions=${req.payload.actions},req=${req.payload.message}" }
+            req.payload.actions.forEach { action ->
+                log.debug { "Building message" }
+                val (sectionTypeString, sectionId) = action.value.split("-")
+                val sectionType = SectionType.entries.first { it.name.contentEquals(sectionTypeString, true) }
+                val sectionSelection = SectionSelection(SlackThread(req.payload.message.channel, req.payload.message.threadTs), sectionId, sectionType)
+                val message = pubsubMessage(sectionSelection)
+                trySend(message)
+            }
             ctx.ack()
+        }
+    }
+
+    private fun trySend(message: PubsubMessage) {
+        try {
+            val messageId = send(message)
+            log.info { "Message published to PubSub, id=$messageId" }
+        } catch (e: Exception) {
+            log.error(e) { "Message send failed" }
         }
     }
 

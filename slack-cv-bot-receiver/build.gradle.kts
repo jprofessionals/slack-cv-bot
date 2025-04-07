@@ -38,6 +38,7 @@ dependencies {
     /* OkHttp dependency is optional if you decide to use it with simple-openai */
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
+    implementation(project(":schemas"))
 }
 
 application {

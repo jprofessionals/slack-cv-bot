@@ -1,0 +1,64 @@
+{
+  "namespace": "no.jpro.slack",
+  "type": "record",
+  "name": "SlackEvent",
+  "fields": [
+    {
+      "name": "event",
+      "type": [
+        {
+          "type": "record",
+          "name": "SlashCommand",
+          "fields": [
+            {
+              "name": "slackThread",
+              "type": {
+                "type": "record",
+                "name": "SlackThread",
+                "fields": [
+                  {
+                    "name": "channelId",
+                    "type": "string"
+                  },
+                  {
+                    "name": "threadTs",
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "userEmail",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "record",
+          "name": "SectionSelection",
+          "fields": [
+            {
+              "name": "slackThread",
+              "type": "SlackThread"
+            },
+            {
+              "name": "sectionId",
+              "type": "string"
+            },
+            {
+              "name": "sectionType",
+              "type": {
+                "type": "enum",
+                "name": "SectionType",
+                "symbols" : [
+                  "KEY_QUALIFICATION",
+                  "PROJECT_EXPERIENCE"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

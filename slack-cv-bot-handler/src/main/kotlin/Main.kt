@@ -12,10 +12,17 @@ import com.slack.api.model.block.composition.PlainTextObject
 import com.slack.api.model.block.element.ButtonElement
 import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.jpro.slack.SectionSelection
+import no.jpro.slack.SlackEvent
+import no.jpro.slack.SlashCommand
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.flowcase.FlowcaseService
 import no.jpro.slack.cv.openai.OpenAIClient
+import org.apache.avro.io.Decoder
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.specific.SpecificDatumReader
 import java.io.BufferedReader
+import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.util.*
@@ -76,6 +83,8 @@ val summaryPromtFormatString =   """
 private const val CUSTOM_EVENT_TYPE = "cv_lest"
 private const val OPENAI_THREAD = "openai_thread_id"
 
+private val reader: SpecificDatumReader<SlackEvent> = SpecificDatumReader(SlackEvent.getClassSchema())
+
 fun main() {
     log.info { "Starting slack-cv-bot-handler" }
     val httpServer: HttpServer = HttpServer.create(InetSocketAddress(8080), 16)
@@ -87,9 +96,14 @@ fun main() {
                 log.info { "Body: '$bodyAsString'" }
                 val message: PubSubBody = objectMapper.readValue(bodyAsString, PubSubBody::class.java)
                 val encodedData = message.message.data
-                val data = String(Base64.getDecoder().decode(encodedData))
-                val slackSlashCommand = objectMapper.readValue(data, SlackSlashCommand::class.java)
-                handleCommand(slackSlashCommand)
+                val data = Base64.getDecoder().decode(encodedData)
+                ByteArrayInputStream(data).use { inputStream ->
+                    when (val event = decodeAvro(inputStream).event) {
+                        is SlashCommand -> handleSlashCommand(event)
+                        is SectionSelection -> handleSectionSelection(event)
+                        else -> log.info { "Ignoring unknown event type: ${event::class.java}" }
+                    }
+                }
             }
         } catch (e: java.lang.Exception) {
             log.warn(e) { "Error processing request" }
@@ -100,7 +114,21 @@ fun main() {
     httpServer.start()
 }
 
-fun handleCommand(slackSlashCommand: SlackSlashCommand) {
+private fun decodeAvro(inputStream: ByteArrayInputStream): SlackEvent {
+    val decoder: Decoder = DecoderFactory.get().directBinaryDecoder(inputStream, null)
+    return reader.read(null, decoder)
+}
+
+fun handleSectionSelection(sectionSelection: SectionSelection) {
+    slack.chatPostMessage {
+        it
+            .channel(sectionSelection.slackThread.channelId)
+            .threadTs(sectionSelection.slackThread.threadTs)
+            .text("Knapper er ikke implementert enda")
+    }
+}
+
+fun handleSlashCommand(slackSlashCommand: SlashCommand) {
     slack.chatPostMessage {
         it
             .channel(slackSlashCommand.slackThread.channelId)

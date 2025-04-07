@@ -195,12 +195,23 @@ resource "google_cloud_run_service_iam_binding" "default" {
   ]
 }
 
+resource "google_pubsub_schema" "slack-event" {
+  name       = "slack-event"
+  type       = "AVRO"
+  definition = file("${path.module}/../schemas/src/main/resources/avro/slack-event.avsc")
+}
+
 resource "google_pubsub_topic" "slack-events" {
   name = "slack-events"
 
   message_retention_duration = "${31*24*60*60}s"
   message_storage_policy {
     allowed_persistence_regions = [var.google_cloud_region]
+  }
+
+  schema_settings {
+    schema   = "${data.google_project.project.id}/schemas/${google_pubsub_schema.slack-event.name}"
+    encoding = "BINARY"
   }
 }
 
