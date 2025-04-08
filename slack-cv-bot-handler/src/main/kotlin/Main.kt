@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.Timestamp
-import com.google.cloud.datastore.DatastoreOptions
-import com.google.cloud.datastore.Entity
-import com.google.cloud.datastore.Key
+import com.google.cloud.firestore.FirestoreOptions
 import com.slack.api.Slack
 import com.slack.api.model.Message
 import com.slack.api.model.block.ActionsBlock
@@ -30,7 +28,6 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
-import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.*
 import java.util.stream.Collectors
@@ -43,7 +40,7 @@ private val log = KotlinLogging.logger {}
 private val openAIClient = OpenAIClient()
 private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
-private val datastore = DatastoreOptions.newBuilder().setDatabaseId("slack-cv-bot").build().service
+private val firestore = FirestoreOptions.newBuilder().setDatabaseId("slack-cv-bot").build().service
 
 private val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
 private val whichSectionQuestionBlock = SectionBlock.builder()
@@ -212,16 +209,14 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
         .build()
 }
 
+data class FirestoreThread(
+    val userEmail: String,
+    val expiresAt: Timestamp = Timestamp.of(Date.from(ZonedDateTime.now().plusDays(7).toInstant()))
+)
+
 private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
-    val kind = "Thread"
-    val name = "${slackThread.channelId}#${slackThread.threadTs}"
-    val threadKey: Key = datastore.newKeyFactory().setKind(kind).newKey(name)
-    val expiresAt = ZonedDateTime.now().plusDays(7)
-    val thread: Entity = Entity.newBuilder(threadKey)
-        .set("userEmail", "Buy milk")
-        .set("expiresAt", Timestamp.of(Date.from(expiresAt.toInstant())))
-        .build()
-    datastore.put(thread)
+    val id = "${slackThread.channelId}#${slackThread.threadTs}"
+    firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
