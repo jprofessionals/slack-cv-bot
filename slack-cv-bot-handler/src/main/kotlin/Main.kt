@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.google.cloud.Timestamp
+import com.google.cloud.datastore.DatastoreOptions
+import com.google.cloud.datastore.Entity
+import com.google.cloud.datastore.Key
 import com.slack.api.Slack
 import com.slack.api.model.Message
 import com.slack.api.model.block.ActionsBlock
@@ -14,6 +18,7 @@ import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.SectionSelection
 import no.jpro.slack.SlackEvent
+import no.jpro.slack.SlackThread
 import no.jpro.slack.SlashCommand
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.flowcase.FlowcaseService
@@ -25,6 +30,8 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
+import java.time.Instant
+import java.time.ZonedDateTime
 import java.util.*
 import java.util.stream.Collectors
 
@@ -36,6 +43,7 @@ private val log = KotlinLogging.logger {}
 private val openAIClient = OpenAIClient()
 private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
+private val datastore = DatastoreOptions.newBuilder().setDatabaseId("slack-cv-bot").build().service
 
 private val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
 private val whichSectionQuestionBlock = SectionBlock.builder()
@@ -137,6 +145,8 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
     }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
 
+    writeToDatastore(slackSlashCommand.slackThread, slackSlashCommand.userEmail)
+
     val message = slack.chatPostMessage {
         it
             .channel(slackSlashCommand.slackThread.channelId)
@@ -200,6 +210,18 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
         .blockId("sectionSelection")
         .elements(keyQualificationElements.plus(projectExperienceElements))
         .build()
+}
+
+private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
+    val kind = "Thread"
+    val name = "${slackThread.channelId}#${slackThread.threadTs}"
+    val threadKey: Key = datastore.newKeyFactory().setKind(kind).newKey(name)
+    val expiresAt = ZonedDateTime.now().plusDays(7)
+    val thread: Entity = Entity.newBuilder(threadKey)
+        .set("userEmail", "Buy milk")
+        .set("expiresAt", Timestamp.of(Date.from(expiresAt.toInstant())))
+        .build()
+    datastore.put(thread)
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)

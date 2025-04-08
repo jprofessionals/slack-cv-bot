@@ -350,3 +350,21 @@ resource "google_cloud_run_v2_service" "slack-cv-bot-handler" {
     }
   }
 }
+
+resource "google_firestore_database" "slack-cv-bot" {
+  location_id = var.google_cloud_region
+  name        = "slack-cv-bot"
+  type        = "FIRESTORE_NATIVE"
+
+  delete_protection_state           = "DELETE_PROTECTION_ENABLED"
+  deletion_policy                   = "DELETE"
+}
+
+resource "google_firestore_field" "threads-expiresAt" {
+  database   = google_firestore_database.slack-cv-bot.name
+  collection = "threads"
+  field      = "expiresAt"
+
+  ttl_config {}
+  index_config {}
+}

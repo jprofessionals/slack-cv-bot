@@ -33,6 +33,7 @@ dependencies {
     implementation(platform("com.google.cloud:libraries-bom:26.56.0"))
     implementation("com.google.cloud:google-cloud-logging-logback")
     implementation("com.google.cloud:google-cloud-pubsub")
+    implementation("com.google.cloud:google-cloud-datastore")
 
     // Openai
     implementation ("io.github.sashirestela:simple-openai:3.19.3")
