@@ -216,7 +216,8 @@ data class FirestoreThread(
 
 private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
     val id = "${slackThread.channelId}#${slackThread.threadTs}"
-    firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
+    val result = firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
+    log.info { "Wrote to firestore: ${result.get()}" }
 }
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
