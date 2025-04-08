@@ -299,6 +299,7 @@ resource "google_pubsub_subscription_iam_binding" "slack-cv-bot-handler" {
 }
 
 resource "google_project_iam_member" "slack-cv-bot-handler_firestore-user" {
+  project = var.google_cloud_project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.slack-cv-bot-handler.email}"
 }
