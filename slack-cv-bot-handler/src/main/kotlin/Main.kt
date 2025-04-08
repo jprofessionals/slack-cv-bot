@@ -283,7 +283,7 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
         .reversed()
         .map { projectExperience ->
             ButtonElement.builder()
-                .text(PlainTextObject(projectExperience.description.no, false))
+                .text(PlainTextObject(projectExperience?.description?.no ?: "Ikke-navngitt prosjekt", false))
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }
