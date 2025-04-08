@@ -298,6 +298,11 @@ resource "google_pubsub_subscription_iam_binding" "slack-cv-bot-handler" {
   ]
 }
 
+resource "google_project_iam_member" "slack-cv-bot-handler_firestore-user" {
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.slack-cv-bot-handler.email}"
+}
+
 data "google_artifact_registry_docker_image" "slack-cv-bot-handler" {
   location      = google_artifact_registry_repository.slack-cv-bot.location
   repository_id = google_artifact_registry_repository.slack-cv-bot.repository_id

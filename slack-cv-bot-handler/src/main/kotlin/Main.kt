@@ -216,6 +216,7 @@ data class FirestoreThread(
 
 private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
     val id = "${slackThread.channelId}#${slackThread.threadTs}"
+    log.debug { "Writing to firestore: id=$id" }
     val result = firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
     log.info { "Wrote to firestore: ${result.get()}" }
 }
