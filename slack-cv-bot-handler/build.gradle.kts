@@ -36,7 +36,7 @@ dependencies {
     implementation("com.google.cloud:google-cloud-datastore")
 
     // Openai
-    implementation ("io.github.sashirestela:simple-openai:3.19.3")
+    implementation ("io.github.sashirestela:simple-openai:3.19.4")
     /* OkHttp dependency is optional if you decide to use it with simple-openai */
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
