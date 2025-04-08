@@ -112,6 +112,12 @@ resource "google_project_iam_member" "slack-cv-bot-github-actions_secretmanager"
   member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
 }
 
+resource "google_project_iam_member" "slack-cv-bot-github-actions_datastore" {
+  project = var.google_cloud_project_id
+  role    = "roles/datastore.owner"
+  member  = "serviceAccount:${google_service_account.slack-cv-bot-github-actions.email}"
+}
+
 resource "google_service_account" "slack-cv-bot-receiver" {
   account_id = "slack-cv-bot-receiver"
 }
