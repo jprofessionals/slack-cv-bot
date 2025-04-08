@@ -7,17 +7,13 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.Timestamp
 import com.google.cloud.firestore.FirestoreOptions
 import com.slack.api.Slack
-import com.slack.api.model.Message
 import com.slack.api.model.block.ActionsBlock
 import com.slack.api.model.block.SectionBlock
 import com.slack.api.model.block.composition.PlainTextObject
 import com.slack.api.model.block.element.ButtonElement
 import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.jpro.slack.SectionSelection
-import no.jpro.slack.SlackEvent
-import no.jpro.slack.SlackThread
-import no.jpro.slack.SlashCommand
+import no.jpro.slack.*
 import no.jpro.slack.cv.flowcase.CVReader
 import no.jpro.slack.cv.flowcase.FlowcaseService
 import no.jpro.slack.cv.openai.OpenAIClient
@@ -47,13 +43,7 @@ private val whichSectionQuestionBlock = SectionBlock.builder()
     .text(PlainTextObject(whichSectionQuestion, false))
     .build()
 
-private val promptFormatString = """
-    Vurder cv mellom <CV> og </CV> og gi en kort vurdering
-    <CV>
-    %s
-    </CV>
-"""
-val summaryPromtFormatString =   """
+private val summaryPromptFormatString = """
   <ROLLE>
   Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent.
   </ROLLE>
@@ -83,7 +73,60 @@ val summaryPromtFormatString =   """
   <PROSJEKTBESKRIVELSER>
   %s
   </PROSJEKTBESKRIVELSER>
-  """
+"""
+
+
+private val projectPromptFormatString = """
+<ROLLE>
+Du er ekspert på å vurdere prosjektbeskrivelser for CV skrevet av IT-konsulent.
+</ROLLE>
+
+Bruk følgende retningslinjer og kriterier når du vurderer en prosjektbeskrivelse:
+
+<RETNINGSLINJER>
+Fokuser mest på din rolle og bidrag, mindre på prosjekt/kunde beskrivelse, Informasjon om prosjekt eller kunde definerer konteksten for resten av beskrivelsen. alle dine prosjektet bør ha beskrivelse og de siste prosjektene er viktigst. Beskriv verdi for kunden - hvilken verdi gav du i teamet, til kunden, sluttbrukerne?
+En prosjektbeskrivelse kan deles opp på følgende måte:
+- Om kunden, sirka 10%% av innhold
+- Om prosjektet, sirka 20%% av innhold
+- Om teamet, sirka 20%% av innhold
+- Om konsulentens rolle og leveranse/bidrag, 50%% av innholdet. Ta med de mest relevante teknologier og metodikker.
+
+  ** Om kunden **
+  Introduserer kunden for leseren og forklarer kort hva kunden drev med. Ting som kan nevnes:
+  - Forretningsområde
+  - Deres kunder, brukere ol
+  - Vurder hvor allment kjent kunde/prosjekt/forretning er
+
+  ** Om prosjektet **
+  - Forklar kort hva prosjektet gikk ut på
+  - Hvor lenge har det pågått
+  - Størrelse
+  - Litt om mål, leveranser ol.
+  - Organisering
+  
+  ** Om teamet **
+  - Størrelse
+  - Sammensetning
+  - Metodikk
+  - Tverfaglighet
+  - Relasjon til organisasjon
+  
+  ** Om ditt bidrag **
+  - Beskriv verdi du har skapt for kunde/sluttbruker/teamet
+  - Nevn viktige leveranser, utmerkelser ol.
+  - Ansvar og roller (både formelt og uformelt)
+
+  Fremhev i tekst det viktigste og mest relevante innen teknologi, verktøy metode. Konkretiser hva du gjorde og hvordan du gjorde det?
+  </RETNINGSLINJER>
+
+  Din oppgave er å bruke retningslinjer til å gi konstruktiv tilbakemelding til bruker. Gi konkrete forslag til forbedringer. Hvis noe mangler si det eksplisitt.
+  
+  Vurder prosjektbeskrivelsen mellom <PROSJEKT> og </PROSJEKT> 
+  Er dette en god prosjektbesrivelse? 
+  <PROSJEKT>
+  %s
+  </PROSJEKT>
+"""
 
 private const val CUSTOM_EVENT_TYPE = "cv_lest"
 private const val OPENAI_THREAD = "openai_thread_id"
@@ -125,13 +168,87 @@ private fun decodeAvro(inputStream: ByteArrayInputStream): SlackEvent {
 }
 
 fun handleSectionSelection(sectionSelection: SectionSelection) {
+    val document = firestore.collection("threads").document(firestoreId(sectionSelection.slackThread)).get().get()
+    if (!document.exists()) {
+        slack.chatPostMessage {
+            it
+                .channel(sectionSelection.slackThread.channelId)
+                .threadTs(sectionSelection.slackThread.threadTs)
+                .text("Jeg har glemt denne samtalen. Kan du starte en ny en?")
+        }
+        return
+    }
+
+    val userEmail = document.getString("userEmail")
+    val cv = cvReader.readCV(userEmail!!) // TODO: what if cv not found
+    val sectionDetails = getSectionDetails(sectionSelection, cv)
+    if (sectionDetails == null) {
+        slack.chatPostMessage {
+            it
+                .channel(sectionSelection.slackThread.channelId)
+                .threadTs(sectionSelection.slackThread.threadTs)
+                .text("Jeg fant ikke riktig seksjon i CVen din, dette er mest sannsynlig en bug.")
+        }
+        return
+    }
+
     slack.chatPostMessage {
         it
             .channel(sectionSelection.slackThread.channelId)
             .threadTs(sectionSelection.slackThread.threadTs)
-            .text("Knapper er ikke implementert enda")
+            .text("Sender ${sectionDetails.title} til OpenAI for vurdering")
+    }
+
+    openAIClient.startNewThread(
+        message = sectionDetails.prompt,
+        onAnswer = { answer, _ ->
+            log.info { "Received answer from OpenAI" }
+            slack.chatPostMessage {
+                it
+                    .channel(sectionSelection.slackThread.channelId)
+                    .threadTs(sectionSelection.slackThread.threadTs)
+                    .text(answer)
+            }
+        }
+    )
+}
+
+private fun getSectionDetails(
+    sectionSelection: SectionSelection,
+    cv: FlowcaseService.FlowcaseCv
+): SectionDetails? {
+    return when (sectionSelection.sectionType) {
+        SectionType.KEY_QUALIFICATION -> {
+            val keyQualification = cv.key_qualifications.firstOrNull { it._id == sectionSelection.sectionId }
+            val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
+            val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
+            return if (prompt != null) {
+                SectionDetails("Sammendrag", prompt)
+            } else {
+                null
+            }
+        }
+        SectionType.PROJECT_EXPERIENCE -> {
+            val projectExperience = cv.project_experiences.firstOrNull { it._id == sectionSelection.sectionId }
+            val title = projectExperience?.description?.no
+            val prompt = String.format(summaryPromptFormatString, projectExperience?.long_description?.no)
+            return if (title != null) {
+                SectionDetails(title, prompt)
+            } else {
+                null
+            }
+        }
+        null -> {
+            log.warn { "sectionType was null" }
+            null
+        }
     }
 }
+
+data class SectionDetails (
+    val title: String,
+    val prompt: String,
+)
 
 fun handleSlashCommand(slackSlashCommand: SlashCommand) {
     slack.chatPostMessage {
@@ -152,35 +269,6 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
             .blocks(listOf(whichSectionQuestionBlock, createActionBlock(cv)))
     }
     log.debug { message }
-
-    val summary = cv.key_qualifications.find { !it.disabled }?.long_description?.no?:""//TODO: what if no summary
-    val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
-
-    slack.chatPostMessage {
-        it
-            .channel(slackSlashCommand.slackThread.channelId)
-            .threadTs(slackSlashCommand.slackThread.threadTs)
-            .text("Sender sammendrag til OpenAI for vurdering")
-    }
-
-    openAIClient.startNewThread(
-        message = String.format(summaryPromtFormatString, summary, projects),
-        onAnswer = { answer, openAiThread ->
-            log.info { "Received answer from OpenAI" }
-            slack.chatPostMessage {
-                it
-                    .channel(slackSlashCommand.slackThread.channelId)
-                    .threadTs(slackSlashCommand.slackThread.threadTs)
-                    .text(answer)
-                    .metadata(
-                        Message.Metadata.builder()
-                            .eventType(CUSTOM_EVENT_TYPE)
-                            .eventPayload(mapOf<String?, String?>(OPENAI_THREAD to openAiThread))
-                            .build()
-                    )
-            }
-        }
-    )
 }
 
 private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
@@ -215,11 +303,13 @@ data class FirestoreThread(
 )
 
 private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
-    val id = "${slackThread.channelId}#${slackThread.threadTs}"
+    val id = firestoreId(slackThread)
     log.debug { "Writing to firestore: id=$id" }
     val result = firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
     log.info { "Wrote to firestore: ${result.get()}" }
 }
+
+private fun firestoreId(slackThread: SlackThread) = "${slackThread.channelId}#${slackThread.threadTs}"
 
 fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
     ?: throw Exception("$variableName not defined in environment variables")
