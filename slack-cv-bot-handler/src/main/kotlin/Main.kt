@@ -222,16 +222,12 @@ private fun getSectionDetails(
             val keyQualification = cv.key_qualifications.firstOrNull { it._id == sectionSelection.sectionId }
             val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
-            return if (prompt != null) {
-                SectionDetails("Sammendrag", prompt)
-            } else {
-                null
-            }
+            return SectionDetails("Sammendrag", prompt)
         }
         SectionType.PROJECT_EXPERIENCE -> {
             val projectExperience = cv.project_experiences.firstOrNull { it._id == sectionSelection.sectionId }
             val title = projectExperience?.description?.no
-            val prompt = String.format(summaryPromptFormatString, projectExperience?.long_description?.no)
+            val prompt = String.format(projectPromptFormatString, projectExperience?.long_description?.no)
             return if (title != null) {
                 SectionDetails(title, prompt)
             } else {
