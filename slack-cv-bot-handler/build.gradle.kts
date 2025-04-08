@@ -19,7 +19,7 @@ dependencies {
     implementation("com.slack.api:slack-api-client:$slack_bolt_version")
     implementation("com.slack.api:slack-api-client-kotlin-extension:$slack_bolt_version")
     implementation("com.slack.api:slack-api-model-kotlin-extension:$slack_bolt_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Json stuff
     implementation("com.jayway.jsonpath:json-path:2.9.0")
@@ -41,7 +41,7 @@ dependencies {
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
     //OpenFeign
-    implementation("io.github.openfeign:feign-core:13.5")
+    implementation("io.github.openfeign:feign-core:13.6")
     implementation("io.github.openfeign:feign-gson:13.6")
 
     implementation(project(":schemas"))

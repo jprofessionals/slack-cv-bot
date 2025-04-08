@@ -18,7 +18,7 @@ dependencies {
     implementation("com.slack.api:bolt-jetty:$slack_bolt_version")
     implementation("com.slack.api:slack-api-client-kotlin-extension:$slack_bolt_version")
     implementation("com.slack.api:slack-api-model-kotlin-extension:$slack_bolt_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Json stuff
     implementation("com.jayway.jsonpath:json-path:2.9.0")
