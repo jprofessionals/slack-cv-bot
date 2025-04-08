@@ -30,7 +30,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
     // Google Cloud
-    implementation(platform("com.google.cloud:libraries-bom:26.56.0"))
+    implementation(platform("com.google.cloud:libraries-bom:26.59.0"))
     implementation("com.google.cloud:google-cloud-logging-logback")
     implementation("com.google.cloud:google-cloud-pubsub")
     implementation("com.google.cloud:google-cloud-datastore")
