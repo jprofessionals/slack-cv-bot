@@ -296,7 +296,7 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
 
 data class FirestoreThread(
     val userEmail: String,
-    val expiresAt: Timestamp = Timestamp.of(Date.from(ZonedDateTime.now().plusDays(7).toInstant()))
+    val expiresAt: Timestamp = Timestamp.of(Date.from(ZonedDateTime.now().plusHours(8).toInstant()))
 )
 
 private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
