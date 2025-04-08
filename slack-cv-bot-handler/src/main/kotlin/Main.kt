@@ -208,6 +208,7 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
                     .channel(sectionSelection.slackThread.channelId)
                     .threadTs(sectionSelection.slackThread.threadTs)
                     .text(answer)
+                    .mrkdwn(true)
             }
         }
     )
