@@ -222,7 +222,7 @@ private fun getSectionDetails(
     return when (sectionSelection.sectionType) {
         SectionType.KEY_QUALIFICATION -> {
             val keyQualification = cv.key_qualifications.firstOrNull { it._id == sectionSelection.sectionId }
-            val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no?:""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
+            val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer?.no} - ${it.description?.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description?.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
             return SectionDetails("Sammendrag", prompt)
         }
@@ -285,7 +285,7 @@ private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
         .reversed()
         .map { projectExperience ->
             ButtonElement.builder()
-                .text(PlainTextObject(projectExperience?.description?.no ?: "Ikke-navngitt prosjekt", false))
+                .text(PlainTextObject(projectExperience.description?.no?.take(72) ?: "Ikke-navngitt prosjekt", false))
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }

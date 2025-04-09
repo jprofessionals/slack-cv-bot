@@ -33,9 +33,9 @@ interface FlowcaseService {
     data class ProjectExperiences(
         val _id: String,
         val disabled: Boolean,
-        val customer: TranslatedValue,
-        val description: TranslatedValue,
-        val long_description: TranslatedValue,
+        val customer: TranslatedValue?,
+        val description: TranslatedValue?,
+        val long_description: TranslatedValue?,
         val month_from: String,
         val month_to: String,
         val year_from: String,
@@ -45,8 +45,8 @@ interface FlowcaseService {
     )
 
     data class TranslatedValue(
-        val no: String,
-        val int: String,
+        val no: String?,
+        val int: String?,
     )
 
     data class ProjectRole(
