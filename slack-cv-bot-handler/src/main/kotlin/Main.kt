@@ -38,14 +38,14 @@ private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
 private val firestore = FirestoreOptions.newBuilder().setDatabaseId("slack-cv-bot").build().service
 
-private val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
+private const val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
 private val whichSectionQuestionBlock = SectionBlock.builder()
     .text(PlainTextObject(whichSectionQuestion, false))
     .build()
 
 private const val buttonLimit = 6
 
-private val summaryPromptFormatString = """
+private const val summaryPromptFormatString = """
   <ROLLE>
   Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent.
   </ROLLE>
@@ -78,7 +78,7 @@ private val summaryPromptFormatString = """
 """
 
 
-private val projectPromptFormatString = """
+private const val projectPromptFormatString = """
 <ROLLE>
 Du er ekspert på å vurdere prosjektbeskrivelser for CV skrevet av IT-konsulent.
 </ROLLE>
@@ -219,7 +219,8 @@ private fun getSectionDetails(
     return when (sectionSelection.sectionType) {
         SectionType.KEY_QUALIFICATION -> {
             val keyQualification = cv.key_qualifications.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
-            val projects = cv.project_experiences.orEmpty().map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
+            val projects = cv.project_experiences.orEmpty()
+                .joinToString { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
             return SectionDetails("Sammendrag", prompt)
         }
@@ -317,5 +318,5 @@ private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
 
 private fun firestoreId(slackThread: SlackThread) = "${slackThread.channelId}#${slackThread.threadTs}"
 
-fun getEnvVariableOrThrow(variableName: String) = System.getenv().get(variableName)
+fun getEnvVariableOrThrow(variableName: String) = System.getenv()[variableName]
     ?: throw Exception("$variableName not defined in environment variables")
