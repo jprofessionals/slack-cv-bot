@@ -53,7 +53,7 @@ class SlackApp(val app: App = App()) {
             }
             val say = ctx.say {
                 it.channel(req.payload.channelId)
-                    .text("Jeg sjekker CV for ${req.payload.userName} (${userEmail})")
+                    .text("Jeg sjekker CV for ${userToReview} (${userEmail})")
             }
             if (!say.isOk) {
                 ctx.respond("Jeg har ikke tilgang til å sende fullstendige svar til kanalen. Jeg må være medlem. (${say.error})")
