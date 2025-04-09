@@ -17,9 +17,9 @@ class FlowcaseClientIT {
         val cv = client.cv(user.id, user.default_cv_id)
 
         assertTrue(cv.name.isNotEmpty())
-        assertTrue(cv.project_experiences.isNotEmpty())
-        assertTrue(cv.project_experiences[0]._id.length >= 24)
-        assertTrue(cv.key_qualifications.isNotEmpty())
-        assertTrue(cv.key_qualifications[0]._id.length >= 24)
+        assertTrue(cv.project_experiences.orEmpty().isNotEmpty())
+        assertTrue(cv.project_experiences!![0]._id.length >= 24)
+        assertTrue(cv.key_qualifications.orEmpty().isNotEmpty())
+        assertTrue(cv.key_qualifications!![0]._id.length >= 24)
     }
 }

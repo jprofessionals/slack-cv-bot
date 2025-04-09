@@ -130,9 +130,6 @@ En prosjektbeskrivelse kan deles opp på følgende måte:
   </PROSJEKT>
 """
 
-private const val CUSTOM_EVENT_TYPE = "cv_lest"
-private const val OPENAI_THREAD = "openai_thread_id"
-
 private val reader: SpecificDatumReader<SlackEvent> = SpecificDatumReader(SlackEvent.getClassSchema())
 
 fun main() {
@@ -221,13 +218,13 @@ private fun getSectionDetails(
 ): SectionDetails? {
     return when (sectionSelection.sectionType) {
         SectionType.KEY_QUALIFICATION -> {
-            val keyQualification = cv.key_qualifications.firstOrNull { it._id == sectionSelection.sectionId }
-            val projects = cv.project_experiences.map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer?.no} - ${it.description?.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description?.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
+            val keyQualification = cv.key_qualifications.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
+            val projects = cv.project_experiences.orEmpty().map { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }.joinToString()
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
             return SectionDetails("Sammendrag", prompt)
         }
         SectionType.PROJECT_EXPERIENCE -> {
-            val projectExperience = cv.project_experiences.firstOrNull { it._id == sectionSelection.sectionId }
+            val projectExperience = cv.project_experiences.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
             val title = projectExperience?.description?.no
             val prompt = String.format(projectPromptFormatString, projectExperience?.long_description?.no)
             return if (title != null) {
@@ -270,7 +267,7 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
 }
 
 private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
-    val keyQualificationElements = cv.key_qualifications
+    val keyQualificationElements = cv.key_qualifications.orEmpty()
         .filter { !it.disabled }
         .map { keyQualification ->
             ButtonElement.builder()
@@ -279,13 +276,13 @@ private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
                 .build()
 
         }
-    val projectExperienceElements = cv.project_experiences
+    val projectExperienceElements = cv.project_experiences.orEmpty()
         .filter { !it.disabled }
         .sortedWith(compareBy({ it.year_from }, { it.month_from }))
         .reversed()
         .map { projectExperience ->
             ButtonElement.builder()
-                .text(PlainTextObject(projectExperience.description?.no?.take(72) ?: "Ikke-navngitt prosjekt", false))
+                .text(PlainTextObject(getButtonText(projectExperience), false))
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }
@@ -297,6 +294,13 @@ private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
                 .elements(buttonChunk)
                 .build()
         }
+}
+
+private fun getButtonText(projectExperience: FlowcaseService.ProjectExperiences): String {
+    return projectExperience.description.no
+        ?.takeIf { it.isNotEmpty() }
+        ?.take(72)
+        ?: "Ikke-navngitt prosjekt"
 }
 
 data class FirestoreThread(

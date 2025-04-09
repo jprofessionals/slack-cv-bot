@@ -19,8 +19,8 @@ interface FlowcaseService {
 
     data class FlowcaseCv(
         val name: String,
-        val project_experiences: List<ProjectExperiences>,
-        val key_qualifications: List<KeyQualifications>,
+        val project_experiences: List<ProjectExperiences>?,
+        val key_qualifications: List<KeyQualifications>?,
     )
 
     data class KeyQualifications(
@@ -33,15 +33,15 @@ interface FlowcaseService {
     data class ProjectExperiences(
         val _id: String,
         val disabled: Boolean,
-        val customer: TranslatedValue?,
-        val description: TranslatedValue?,
-        val long_description: TranslatedValue?,
-        val month_from: String,
-        val month_to: String,
-        val year_from: String,
-        val year_to: String,
+        val customer: TranslatedValue,
+        val description: TranslatedValue,
+        val long_description: TranslatedValue,
+        val month_from: String?,
+        val month_to: String?,
+        val year_from: String?,
+        val year_to: String?,
         val roles: List<ProjectRole>,
-        val project_experience_skills: List<ProjectExperienceSkills>
+        val project_experience_skills: List<ProjectExperienceSkills>?
     )
 
     data class TranslatedValue(
