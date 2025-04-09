@@ -11,7 +11,7 @@ import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger {}
 
-private val userMentionRegex = Pattern.compile("""^<@([UW][A-Z0-9]+)(?:\|[^>]+)?>$""")
+private val userMentionRegex = Pattern.compile("""^<@([UW][A-Z0-9]+)(\|[^>]+)>$""")
 
 class SlackApp(val app: App = App()) {
 
@@ -40,20 +40,20 @@ class SlackApp(val app: App = App()) {
         app.command("/lescv") { req, ctx ->
             log.info { "Slash command  /lescv. text=${req.payload.text}" }
             val matcher = userMentionRegex.matcher(req.payload.text)
-            val userToReview = if (matcher.matches()) {
-                matcher.group(1)
+            val (userToReview, userName) = if (matcher.matches()) {
+                Pair(matcher.group(1), matcher.group(2).removePrefix("|"))
             } else {
-                req.payload.userId
+                Pair(req.payload.userId, req.payload.userName)
             }
-            log.info { "Regex matched to userId $userToReview, invoking user ${req.payload.userId}" }
+            log.info { "Using $userToReview $userName, invoked by ${req.payload.userId} ${req.payload.userName}" }
             val userEmail = getUserEmail(userToReview)
             if (userEmail == null) {
-                ctx.respond("Jeg fant ikke epost for ${req.payload.userName}")
+                ctx.respond("Jeg fant ikke epost for $userName")
                 return@command ctx.ack()
             }
             val say = ctx.say {
                 it.channel(req.payload.channelId)
-                    .text("Jeg sjekker CV for ${userToReview} (${userEmail})")
+                    .text("Jeg sjekker CV for $userName ($userEmail)")
             }
             if (!say.isOk) {
                 ctx.respond("Jeg har ikke tilgang til å sende fullstendige svar til kanalen. Jeg må være medlem. (${say.error})")
