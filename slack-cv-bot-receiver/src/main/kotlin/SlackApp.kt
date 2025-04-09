@@ -39,9 +39,13 @@ class SlackApp(val app: App = App()) {
     private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
             log.info { "Slash command  /lescv. text=${req.payload.text}" }
-            val matcher = userMentionRegex.matcher(req.payload.text)
-            val (userToReview, userName) = if (matcher.matches()) {
-                Pair(matcher.group(1), matcher.group(2).removePrefix("|"))
+            val (userToReview, userName) = if (req.payload.text != null) {
+                val matcher = userMentionRegex.matcher(req.payload.text)
+                if (matcher.matches()) {
+                    Pair(matcher.group(1), matcher.group(2).removePrefix("|"))
+                } else {
+                    Pair(req.payload.userId, req.payload.userName)
+                }
             } else {
                 Pair(req.payload.userId, req.payload.userName)
             }
