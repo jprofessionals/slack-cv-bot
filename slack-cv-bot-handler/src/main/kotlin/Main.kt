@@ -291,10 +291,10 @@ private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
         }
     val buttons = keyQualificationElements + projectExperienceElements
     return buttons.chunked(buttonLimit)
-        .mapIndexed { i, buttons ->
+        .mapIndexed { i, buttonChunk ->
             ActionsBlock.builder()
                 .blockId("sectionSelection-$i")
-                .elements(buttons)
+                .elements(buttonChunk)
                 .build()
         }
 }

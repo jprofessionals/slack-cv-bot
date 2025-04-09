@@ -11,6 +11,8 @@ import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger {}
 
+private val userMentionRegex = Pattern.compile("<@([UW][A-Z0-9]+)>")
+
 class SlackApp(val app: App = App()) {
 
     init {
@@ -36,7 +38,14 @@ class SlackApp(val app: App = App()) {
     /** Starter en ny tråd i slack  */
     private fun slashCommandLesCV() {
         app.command("/lescv") { req, ctx ->
-            log.info { "Slash command  /lescv" }
+            log.info { "Slash command  /lescv. text=${req.payload.text}" }
+            val matcher = userMentionRegex.matcher(req.payload.text)
+            val userToReview = if (matcher.matches()) {
+                matcher.group()
+            } else {
+                req.payload.userId
+            }
+            log.info { "Regex matched to userId $userToReview, invoking user ${req.payload.userId}" }
             val userEmail = getUserEmail(req.payload.userId)
             if (userEmail == null) {
                 ctx.respond("Jeg fant ikke epost for ${req.payload.userName}")
