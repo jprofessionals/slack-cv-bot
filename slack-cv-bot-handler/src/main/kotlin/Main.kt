@@ -43,6 +43,8 @@ private val whichSectionQuestionBlock = SectionBlock.builder()
     .text(PlainTextObject(whichSectionQuestion, false))
     .build()
 
+private const val buttonLimit = 6
+
 private val summaryPromptFormatString = """
   <ROLLE>
   Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent.
@@ -262,12 +264,12 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
             .text(whichSectionQuestion)
-            .blocks(listOf(whichSectionQuestionBlock, createActionBlock(cv)))
+            .blocks(listOf(whichSectionQuestionBlock) + actionsBlocks(cv))
     }
     log.debug { message }
 }
 
-private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
+private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
     val keyQualificationElements = cv.key_qualifications
         .filter { !it.disabled }
         .map { keyQualification ->
@@ -287,10 +289,14 @@ private fun createActionBlock(cv: FlowcaseService.FlowcaseCv): ActionsBlock? {
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }
-    return ActionsBlock.builder()
-        .blockId("sectionSelection")
-        .elements(keyQualificationElements.plus(projectExperienceElements))
-        .build()
+    val buttons = keyQualificationElements + projectExperienceElements
+    return buttons.chunked(buttonLimit)
+        .mapIndexed { i, buttons ->
+            ActionsBlock.builder()
+                .blockId("sectionSelection-$i")
+                .elements(buttons)
+                .build()
+        }
 }
 
 data class FirestoreThread(
