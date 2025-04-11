@@ -34,7 +34,8 @@ Appen kan kjøres lokalt og eksponeres feks via https://ngrok.com/
 
 Urler må klippes ut og limes inn i slack config for appen under
 - Features/Event Subscriptions https://api.slack.com/apps/A08F4EW0UV9/event-subscriptions
-- Features/Slash commands https://api.slack.com/apps/A08F4EW0UV9/slash-commands?
+- Features/Slash commands https://api.slack.com/apps/A08F4EW0UV9/slash-commands
+- Features/Interactivity & Shortcuts https://api.slack.com/apps/A08F4EW0UV9/interactive-messages
 
 event apiet finnes på <din-url>/slack/events
 
