@@ -46,27 +46,36 @@ private val whichSectionQuestionBlock = SectionBlock.builder()
 private const val buttonLimit = 6
 
 private const val summaryPromptFormatString = """
-  <ROLLE>
+   <ROLLE>
   Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent.
   </ROLLE>
 
   <INNSTRUKS>
   Du skal:
   - Bruke oppgitte retningslinjer og kriterier mellom <RETNINGSLINJER> og </RETNINGSLINJER> for å vurdere tekst mellom <SAMMENDRAG> og </SAMMENDRAG>. Fokuser på konstruktiv tilbakemelding 
-  til bruker, du skal begrunne dine vurderinger med utgangspunkt i retningslinjer og gi konkrete forslag til forbedringer. 
+  til bruker, du skal begrunne dine vurderinger med utgangspunkt i retningslinjer og gi konkrete forslag til forbedringer og påpeke svakheter og eventuelle ting som bør endres. 
+  Det kan også poengteres om sammendraget er godt og eventuelle forbedringer er positivt, men ikke påkrevd. 
   - Lage et oppdatert sammendrag med referanser til erfarenheter fra prosjekter konsulenten har jobbet på. Bruk informasjonen mellom <PROSJEKTBESKRIVELSER> og </PROSJEKTBESKRIVELSER>.
   </INNSTRUKS>
   
   <RETNINGSLINJER>
   Sammendraget skal oppsummere konsulentens kompetanse, erfaring og personlige egenskaper. Sammendraget skal gi innsikt 
   i hvem konsulenten er, dennes bakgrunn og hva konsulenten kan bidra med. Sammendraget er konsulentens 'elevator pitch'. 
-  Hvis konsulenten har 5, 10 eller 15 års erfaring, skal sammendraget være mer enn et par setninger. Det kan deles likt mellom: 
+  Hvis konsulenten har 5, 10 eller 15 års erfaring, skal sammendraget være mer enn et par setninger. Det kan deles omtrentlig likt mellom, men må ikke nødvendigvis ha eksakt samme oppbygning 
+  så lenge alle aspekter er dekket: 
   - Tekniske ferdigheter: Konsulenten skal beskrive sine viktigste tekniske ferdigheter og løfte frem erfaringer, viktige roller og ansvar 
   denne har hatt. 
   - Team/organisering/metodikk: Konsulentens erfaringer i tverrfaglige team, med organisering og metodikk skal beskrives. Konsulenten burde nevne hvordan 
   denne beriker team/menneskene rundt seg og beskrive sitt verdibidraget. Det bør vises til både selvstendighet og samspill med andre 
   (også andre fagdisipliner). 
   - Personlige egenskaper: Konsulenten skal si noe om hva denne er spesielt engasjert i/opptatt av/interessert i.
+  
+  Sørg for at følgende regler er overholdt:
+  - Skriv alltid i tredjeperson og i fortid
+  - Skriv alltid hele setninger, unngå stikkord eller punktlister
+  - Vurder bruk av forkortelser, ikke alle forstår terminologien
+  - Sørg for å skrive utdypende og i detalj med gode avsnitt
+  - Sjekk innholdet for slurve og stavefeil
   </RETNINGSLINJER>
   
   <SAMMENDRAG>
@@ -206,7 +215,7 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
                 it
                     .channel(sectionSelection.slackThread.channelId)
                     .threadTs(sectionSelection.slackThread.threadTs)
-                    .text(answer)
+                    .text(answer.replace("**", "*"))//By replacing this markdown is usually accepted by slack
             }
         }
     )
