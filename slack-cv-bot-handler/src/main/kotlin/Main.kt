@@ -46,19 +46,18 @@ private val whichSectionQuestionBlock = SectionBlock.builder()
 private const val buttonLimit = 6
 
 private const val summaryPromptFormatString = """
-   <ROLLE>
-  Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent.
-  </ROLLE>
+<ROLLE>
+  Du er ekspert på å vurdere sammendrag av nøkkelkvalifikasjoner for CV skrevet av IT-konsulent. 
+</ROLLE>
 
-  <INNSTRUKS>
+<INNSTRUKS>
   Du skal:
-  - Bruke oppgitte retningslinjer og kriterier mellom <RETNINGSLINJER> og </RETNINGSLINJER> for å vurdere tekst mellom <SAMMENDRAG> og </SAMMENDRAG>. Fokuser på konstruktiv tilbakemelding 
-  til bruker, du skal begrunne dine vurderinger med utgangspunkt i retningslinjer og gi konkrete forslag til forbedringer og påpeke svakheter og eventuelle ting som bør endres. 
-  Det kan også poengteres om sammendraget er godt og eventuelle forbedringer er positivt, men ikke påkrevd. 
+  - Bruke oppgitte retningslinjer og kriterier mellom <RETNINGSLINJER> og </RETNINGSLINJER> for å vurdere teksten mellom <SAMMENDRAG> og </SAMMENDRAG>. Fokuser på konstruktiv tilbakemelding 
+  til bruker, du skal begrunne dine vurderinger med utgangspunkt i retningslinjer og gi konkrete forslag til forbedringer og påpeke svakheter og eventuelle ting som bør endres. Det kan også poengteres om sammendraget er godt. 
   - Lage et oppdatert sammendrag med referanser til erfarenheter fra prosjekter konsulenten har jobbet på. Bruk informasjonen mellom <PROSJEKTBESKRIVELSER> og </PROSJEKTBESKRIVELSER>.
-  </INNSTRUKS>
+</INNSTRUKS>
   
-  <RETNINGSLINJER>
+<RETNINGSLINJER>
   Sammendraget skal oppsummere konsulentens kompetanse, erfaring og personlige egenskaper. Sammendraget skal gi innsikt 
   i hvem konsulenten er, dennes bakgrunn og hva konsulenten kan bidra med. Sammendraget er konsulentens 'elevator pitch'. 
   Hvis konsulenten har 5, 10 eller 15 års erfaring, skal sammendraget være mer enn et par setninger. Det kan deles omtrentlig likt mellom, men må ikke nødvendigvis ha eksakt samme oppbygning 
@@ -71,81 +70,56 @@ private const val summaryPromptFormatString = """
   - Personlige egenskaper: Konsulenten skal si noe om hva denne er spesielt engasjert i/opptatt av/interessert i.
   
   Sørg for at følgende regler er overholdt:
-  - Skriv alltid i tredjeperson og i fortid
-  - Skriv alltid hele setninger, unngå stikkord eller punktlister
-  - Vurder bruk av forkortelser, ikke alle forstår terminologien
+  - Skriv alltid i tredjeperson og i fortid, 
+  - Skriv hele setninger, unngå stikkord eller punktlister
+  - Vurder bruk av forkortelser, ikke alle forstår terminologien - velkjente termer kan fint benyttes
   - Sørg for å skrive utdypende og i detalj med gode avsnitt
-  - Sjekk innholdet for slurve og stavefeil
-  </RETNINGSLINJER>
+  - Unngå slurvefeil og sjekk stavefeil
+  - Språket trenger ikke være veldig formelt, bruk gjerne fornavn på konsulenten
+</RETNINGSLINJER>
   
-  <SAMMENDRAG>
+<SAMMENDRAG>
   %s
-  </SAMMENDRAG>
-  <PROSJEKTBESKRIVELSER>
+</SAMMENDRAG>
+<PROSJEKTBESKRIVELSER>
   %s
-  </PROSJEKTBESKRIVELSER>
+</PROSJEKTBESKRIVELSER>
 """
 
 
 private const val projectPromptFormatString = """
 <ROLLE>
-Du er ekspert på å vurdere prosjektbeskrivelser for CV skrevet av IT-konsulent.
+Du er ekspert på å vurdere beskrivelse av en prosjekt i IT-konsulents CV.
 </ROLLE>
 
-Bruk følgende retningslinjer og kriterier når du vurderer en prosjektbeskrivelse:
+<INNSTRUKS>
+Du skal:
+- Bruke oppgitte retningslinjer og kriterier mellom <RETNINGSLINJER> og </RETNINGSLINJER> for å vurdere tekst mellom <PROSJEKT> og </PROSJEKT>. Fokuser på konstruktiv tilbakemelding
+til bruker, du skal begrunne dine vurderinger med utgangspunkt i retningslinjer og gi konkrete forslag til forbedringer og påpeke svakheter og eventuelle ting som bør endres.
+- Er dette en god prosjektbesrivelse? Hvis noe mangler eller strider mot rettningslinjene si det eksplisitt. Det kan også poengteres om beskrivelsen er god.
+</INNSTRUKS>
 
 <RETNINGSLINJER>
-Fokuser mest på konsulentens rolle og bidrag, mindre på beskrivelse av prosjekt eller kunde, Informasjon om prosjekt eller kunde definerer konteksten for resten av beskrivelsen. 
-Alle prosjektene bør ha beskrivelse og de siste prosjektene er viktigst. Beskriv verdi for kunden - hvilken verdi gav konsulenten i teamet, til kunden, sluttbrukerne osv.?
+Bekrivelsen skal inneholde følgende; Prosjekt (tittel), Kunde, Periode, Prosjektbeskrivelse, en eller flere roller (som består av Rolle (tittel) og Rollebeskrivelse) og en liste med Teknologi/Verktøy/Metode.
+Teksten må gi leseren god innsikt i hva som ble laget og hvordan. Inkluder konkrete detaljer om utfordringer som ble løst, hvordan og gi innsikt i teknologi, språk og verktøy som ble benyttet i prosjektet. Løft frem viktige leveranser, utmerkelser, prestasjoner ol.
 
-En prosjektbeskrivelse kan deles opp på følgende måte:
-- Om kunden, sirka 10%% av innhold
-- Om prosjektet, sirka 20%% av innhold
-- Om teamet, sirka 20%% av innhold
-- Om konsulentens rolle og leveranse/bidrag, 50%% av innholdet. Ta med de mest relevante teknologier og metodikker.
+** En beskrivelsen kan deles opp på følgende måte: **
+- Om kunden, sirka 10%% av innhold. Introduserer kort kunden for leseren og forklarer kort hva kunden drev med. Ting som kan nevnes er; forretningsområde, deres kunder, brukere ol. Vurder også hvor allment kjent kunde/prosjekt/forretning er, om kunden er svært godt kjent trenger den mindre introduksjon.
+- Om prosjektet, sirka 20%% av innhold. Forklar kort hva prosjektet gikk ut på. Elementer som kan nevnes er; hvor stort var prosjekte (f.eks. omfang i tid, resurser, kostnad ol.), konkrete mål, leveranser, verdiskapning ol. i prosjektet, hvordan var prosjektet organisert.
+- Om teamet, sirka 20%% av innhold. Beskriv kort teamet og dets sammensetning. Elemnter som kan nevnes er antall deltakere, ulike roller og ansvarsområder, metodikk og arbeidsmåte.
+- Om konsulentens rolle og bidrag, 50%% av innholdet. Fremhev i tekst det viktigste og mest relevante innen teknologi, verktøy, metode ol. fra prosjektet. Konkretiser hva konsulenten gjorde og hvordan?
 
-  ** Om kunden **
-  Introduserer kunden for leseren og forklarer kort hva kunden drev med. Ting som kan nevnes:
-  - Forretningsområde
-  - Deres kunder, brukere ol
-  - Vurder hvor allment kjent kunde/prosjekt/forretning er
-
-  ** Om prosjektet **
-  - Forklar kort hva prosjektet gikk ut på
-  - Hvor lenge har det pågått
-  - Størrelse
-  - Litt om konkrete mål, leveranser ol.
-  - Organisering
-  
-  ** Om teamet **
-  - Størrelse
-  - Sammensetning
-  - Metodikk
-  - Tverfaglighet
-  - Relasjon til organisasjon
-  
-  ** Om konsulentens bidrag **
-  - Beskriv verdi konsulenten har skapt for kunde/sluttbruker/teamet
-  - Nevn viktige leveranser, utmerkelser ol.
-  - Ansvar og roller konsulenten hadde (både formelt og uformelt)
-
-  Fremhev i tekst det viktigste og mest relevante innen teknologi, verktøy metode. Konkretiser hva konsulenten gjorde og hvordan?
-  </RETNINGSLINJER>
-
-  Din oppgave er å bruke retningslinjer til å gi konstruktiv tilbakemelding til bruker. Gi konkrete forslag til forbedringer. Hvis noe mangler eller strider mot rettningslinjene si det eksplisitt.
-  
-  Vurder prosjektbeskrivelsen mellom <PROSJEKT> og </PROSJEKT> 
-  Er dette en god prosjektbesrivelse? 
-  
-  ** Sørg også for at følgende regler er overholdt: **
-  - Skriv alltid i tredjeperson og i fortid
-  - Skriv alltid hele setninger, unngå stikkord eller punktlister
-  - Vurder bruk av forkortelser, ikke alle forstår terminologien
-  - Sørg for å skrive utdypende og i detalj med gode avsnitt
-  - Sjekk innholdet for slurve og stavefeil
-  <PROSJEKT>
-  %s
-  </PROSJEKT>
+** Sørg også for at følgende regler er overholdt i Prosjektbeskrivelse og Rollebeskrivelse: **
+- Skriv alltid i tredjeperson og i fortid.
+- Skriv hele setninger, unngå stikkord eller punktlister.
+- Vurder bruk av forkortelser, ikke alle forstår terminologien - velkjente termer kan fint benyttes.
+- Sørg for å skrive utdypende og i detalj.
+- Unngå slurv og sjekk stavefeil.
+- Språket trenger ikke være veldig formelt, bruk gjerne fornavn på konsulenten.
+</RETNINGSLINJER>
+<PROSJEKT>
+%s
+</PROSJEKT>
 """
 
 private val reader: SpecificDatumReader<SlackEvent> = SpecificDatumReader(SlackEvent.getClassSchema())
