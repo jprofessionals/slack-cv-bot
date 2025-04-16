@@ -95,7 +95,9 @@ Du er ekspert på å vurdere prosjektbeskrivelser for CV skrevet av IT-konsulent
 Bruk følgende retningslinjer og kriterier når du vurderer en prosjektbeskrivelse:
 
 <RETNINGSLINJER>
-Fokuser mest på din rolle og bidrag, mindre på prosjekt/kunde beskrivelse, Informasjon om prosjekt eller kunde definerer konteksten for resten av beskrivelsen. alle dine prosjektet bør ha beskrivelse og de siste prosjektene er viktigst. Beskriv verdi for kunden - hvilken verdi gav du i teamet, til kunden, sluttbrukerne?
+Fokuser mest på konsulentens rolle og bidrag, mindre på beskrivelse av prosjekt eller kunde, Informasjon om prosjekt eller kunde definerer konteksten for resten av beskrivelsen. 
+Alle prosjektene bør ha beskrivelse og de siste prosjektene er viktigst. Beskriv verdi for kunden - hvilken verdi gav konsulenten i teamet, til kunden, sluttbrukerne osv.?
+
 En prosjektbeskrivelse kan deles opp på følgende måte:
 - Om kunden, sirka 10%% av innhold
 - Om prosjektet, sirka 20%% av innhold
@@ -112,7 +114,7 @@ En prosjektbeskrivelse kan deles opp på følgende måte:
   - Forklar kort hva prosjektet gikk ut på
   - Hvor lenge har det pågått
   - Størrelse
-  - Litt om mål, leveranser ol.
+  - Litt om konkrete mål, leveranser ol.
   - Organisering
   
   ** Om teamet **
@@ -122,18 +124,25 @@ En prosjektbeskrivelse kan deles opp på følgende måte:
   - Tverfaglighet
   - Relasjon til organisasjon
   
-  ** Om ditt bidrag **
-  - Beskriv verdi du har skapt for kunde/sluttbruker/teamet
+  ** Om konsulentens bidrag **
+  - Beskriv verdi konsulenten har skapt for kunde/sluttbruker/teamet
   - Nevn viktige leveranser, utmerkelser ol.
-  - Ansvar og roller (både formelt og uformelt)
+  - Ansvar og roller konsulenten hadde (både formelt og uformelt)
 
-  Fremhev i tekst det viktigste og mest relevante innen teknologi, verktøy metode. Konkretiser hva du gjorde og hvordan du gjorde det?
+  Fremhev i tekst det viktigste og mest relevante innen teknologi, verktøy metode. Konkretiser hva konsulenten gjorde og hvordan?
   </RETNINGSLINJER>
 
-  Din oppgave er å bruke retningslinjer til å gi konstruktiv tilbakemelding til bruker. Gi konkrete forslag til forbedringer. Hvis noe mangler si det eksplisitt.
+  Din oppgave er å bruke retningslinjer til å gi konstruktiv tilbakemelding til bruker. Gi konkrete forslag til forbedringer. Hvis noe mangler eller strider mot rettningslinjene si det eksplisitt.
   
   Vurder prosjektbeskrivelsen mellom <PROSJEKT> og </PROSJEKT> 
   Er dette en god prosjektbesrivelse? 
+  
+  ** Sørg også for at følgende regler er overholdt: **
+  - Skriv alltid i tredjeperson og i fortid
+  - Skriv alltid hele setninger, unngå stikkord eller punktlister
+  - Vurder bruk av forkortelser, ikke alle forstår terminologien
+  - Sørg for å skrive utdypende og i detalj med gode avsnitt
+  - Sjekk innholdet for slurve og stavefeil
   <PROSJEKT>
   %s
   </PROSJEKT>
@@ -204,7 +213,7 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
         it
             .channel(sectionSelection.slackThread.channelId)
             .threadTs(sectionSelection.slackThread.threadTs)
-            .text("Sender ${sectionDetails.title} til OpenAI for vurdering")
+            .text("Sender *${sectionDetails.title}* til OpenAI for vurdering")
     }
 
     openAIClient.startNewThread(
@@ -228,16 +237,17 @@ private fun getSectionDetails(
     return when (sectionSelection.sectionType) {
         SectionType.KEY_QUALIFICATION -> {
             val keyQualification = cv.key_qualifications.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
-            val projects = cv.project_experiences.orEmpty()
-                .joinToString { "<PROSJEKTBESKRIVELSE><PROSJEKT>${it.customer.no} - ${it.description.no} (fra: ${it.month_from}.${it.year_from} til: ${it.month_to}.${it.year_to})</PROSJEKT><BESKRIVELSE>${it.long_description.no ?: ""}</BESKRIVELSE></PROSJEKTBESKRIVELSE>" }
+            val projects = cv.project_experiences.orEmpty().filter { !it.disabled }
+                .joinToString("\n") { "<PROSJEKTBESKRIVELSE>${getProjectDescription(it)}</PROSJEKTBESKRIVELSE>" }
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
             return SectionDetails("Sammendrag", prompt)
         }
         SectionType.PROJECT_EXPERIENCE -> {
             val projectExperience = cv.project_experiences.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
             val title = projectExperience?.description?.no
-            val prompt = String.format(projectPromptFormatString, projectExperience?.long_description?.no)
             return if (title != null) {
+                val projectDescription = getProjectDescription(projectExperience)
+                val prompt = String.format(projectPromptFormatString, projectDescription)
                 SectionDetails(title, prompt)
             } else {
                 null
@@ -304,6 +314,46 @@ private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
                 .elements(buttonChunk)
                 .build()
         }
+}
+
+private fun getProjectDescription(pe: FlowcaseService.ProjectExperiences): String {
+    return ("**Prosjekt:** " + getText_NO(pe.description) + "\\\n" +
+            "**Kunde:** " + getText_NO(pe.customer) + "\\\n" +
+            "**Periode:** " + getDuration(pe) + "\n\n" +
+            "**Prosjektbeskrivelse:** " + getText_NO(pe.long_description) + "\n\n" +
+
+            pe.roles.joinToString("\n\n") { r ->
+                "**Rolle:** " + getText_NO(
+                    r.name
+                ) + "\\\n" +
+                        "**Rollebeskrivelse:** " + getText_NO(r.long_description)
+            } + "\n\n" +
+            "**Teknologi/Verktøy/Metode:** " + ((pe.project_experience_skills?.map { it.tags.no }
+        ?.filter { !it.isNullOrBlank() }?.joinToString().takeIf { !it.isNullOrBlank() }) ?: "<IKKE OPPGITT>"))
+}
+
+private fun getText_NO(tv: FlowcaseService.TranslatedValue): String {
+    return tv.no?.takeIf { it.isNotEmpty() }
+        ?: "<IKKE OPPGITT>"
+}
+
+private fun getOptionText_NO(pe: FlowcaseService.ProjectExperiences): String {
+    return (pe.description.no
+        ?.takeIf { it.isNotEmpty() }
+        ?: "Ikke-navngitt prosjekt") + " - " +
+            (pe.customer.no
+                ?.takeIf { it.isNotEmpty() }
+                ?: "Ikke-navngitt kunde")
+}
+
+private fun getDuration(pe: FlowcaseService.ProjectExperiences): String {
+    return "${
+        (pe.takeIf { !it.month_from.isNullOrBlank() && !it.year_from.isNullOrBlank() }
+            ?.let { it.month_from + "." + it.year_from }) ?: "<IKKE OPPGITT>"
+    } - ${
+        (pe.takeIf { !it.month_to.isNullOrBlank() && !it.year_to.isNullOrBlank() }
+            ?.let { it.month_to + "." + it.year_to }) ?: "d.d."
+    }"
 }
 
 private fun getButtonText(projectExperience: FlowcaseService.ProjectExperiences): String {
