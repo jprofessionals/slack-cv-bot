@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.Timestamp
 import com.google.cloud.firestore.FirestoreOptions
 import com.slack.api.Slack
+import com.slack.api.methods.kotlin_extension.request.chat.blocks
 import com.slack.api.model.block.ActionsBlock
 import com.slack.api.model.block.SectionBlock
 import com.slack.api.model.block.composition.PlainTextObject
@@ -184,10 +185,15 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
     }
 
     slack.chatPostMessage {
+        val text = "Sender *${sectionDetails.title}* til OpenAI for vurdering"
         it
             .channel(sectionSelection.slackThread.channelId)
             .threadTs(sectionSelection.slackThread.threadTs)
-            .text("Sender *${sectionDetails.title}* til OpenAI for vurdering")
+            .text(text)
+            .blocks {
+                section { markdownText(text) }
+                sectionDetails.description?.let { description -> section { markdownText(description.markdownQuoteBlock()) } }
+            }
     }
 
     openAIClient.startNewThread(
@@ -214,7 +220,7 @@ private fun getSectionDetails(
             val projects = cv.project_experiences.orEmpty().filter { !it.disabled }
                 .joinToString("\n") { "<PROSJEKTBESKRIVELSE>${getProjectDescription(it)}</PROSJEKTBESKRIVELSE>" }
             val prompt = String.format(summaryPromptFormatString, keyQualification?.long_description?.no, projects)
-            return SectionDetails("Sammendrag", prompt)
+            return SectionDetails("Sammendrag", prompt, keyQualification?.long_description?.no)
         }
         SectionType.PROJECT_EXPERIENCE -> {
             val projectExperience = cv.project_experiences.orEmpty().firstOrNull { it._id == sectionSelection.sectionId }
@@ -222,7 +228,7 @@ private fun getSectionDetails(
             return if (title != null) {
                 val projectDescription = getProjectDescription(projectExperience)
                 val prompt = String.format(projectPromptFormatString, projectDescription)
-                SectionDetails(title, prompt)
+                SectionDetails(title, prompt, projectDescription)
             } else {
                 null
             }
@@ -237,6 +243,7 @@ private fun getSectionDetails(
 data class SectionDetails (
     val title: String,
     val prompt: String,
+    val description: String?,
 )
 
 fun handleSlashCommand(slackSlashCommand: SlashCommand) {
