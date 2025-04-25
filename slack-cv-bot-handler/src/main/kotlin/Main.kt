@@ -207,6 +207,8 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
                     .threadTs(sectionSelection.slackThread.threadTs)
                     .text(answer.replace("**", "*"))//By replacing this markdown is usually accepted by slack
             }
+
+            askForSectionSelection(sectionSelection.slackThread.channelId, sectionSelection.slackThread.threadTs, cv)
         }
     )
 }
@@ -258,10 +260,18 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
 
     writeToDatastore(slackSlashCommand.slackThread, slackSlashCommand.userEmail)
 
+    askForSectionSelection(slackSlashCommand.slackThread.channelId, slackSlashCommand.slackThread.threadTs, cv)
+}
+
+private fun askForSectionSelection(
+    channelId: String,
+    threadTs: String,
+    cv: FlowcaseService.FlowcaseCv
+) {
     val message = slack.chatPostMessage {
         it
-            .channel(slackSlashCommand.slackThread.channelId)
-            .threadTs(slackSlashCommand.slackThread.threadTs)
+            .channel(channelId)
+            .threadTs(threadTs)
             .text(whichSectionQuestion)
             .blocks(listOf(DividerBlock.builder().build(), questionSection(cv)))
     }
