@@ -39,7 +39,7 @@ private val cvReader = CVReader()
 private val slack = Slack.getInstance().methods(getEnvVariableOrThrow("SLACK_BOT_TOKEN"))
 private val firestore = FirestoreOptions.newBuilder().setDatabaseId("slack-cv-bot").build().service
 
-private const val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
+const val whichSectionQuestion = "Hvilken seksjon ønsker du jeg skal vurdere?"
 private val whichSectionQuestionBlock = SectionBlock.builder()
     .text(PlainTextObject(whichSectionQuestion, false))
     .build()
@@ -318,7 +318,7 @@ private fun getText_NO(tv: FlowcaseService.TranslatedValue): String {
         ?: "<IKKE OPPGITT>"
 }
 
-private fun getOptionText_NO(pe: FlowcaseService.ProjectExperiences): String {
+fun getOptionText_NO(pe: FlowcaseService.ProjectExperiences): String {
     return (pe.description.no
         ?.takeIf { it.isNotEmpty() }
         ?: "Ikke-navngitt prosjekt") + " - " +

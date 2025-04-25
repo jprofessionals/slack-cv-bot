@@ -1,7 +1,10 @@
 package no.jpro.slack.cv
 
 import com.google.pubsub.v1.PubsubMessage
+import com.slack.api.app_backend.interactive_components.payload.BlockActionPayload
 import com.slack.api.bolt.App
+import com.slack.api.model.block.element.ButtonElement
+import com.slack.api.model.block.element.StaticSelectElement
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.SectionSelection
 import no.jpro.slack.SectionType
@@ -78,7 +81,10 @@ class SlackApp(val app: App = App()) {
             log.debug { "req.payload.actions=${req.payload.actions},req.payload.message=${req.payload.message},req.payload.channel=${req.payload.channel}" }
             req.payload.actions.forEach { action ->
                 log.debug { "Building message" }
-                val (sectionTypeString, sectionId) = action.value.split("-")
+                val (sectionTypeString, sectionId) = when(val parsedAction = parseAction(action)) {
+                    null -> return@forEach
+                    else -> parsedAction
+                }
                 val sectionType = SectionType.entries.first { it.name.contentEquals(sectionTypeString, true) }
                 val sectionSelection = SectionSelection(SlackThread(req.payload.channel.id, req.payload.message.threadTs), sectionId, sectionType)
                 val message = pubsubMessage(sectionSelection)
@@ -86,6 +92,19 @@ class SlackApp(val app: App = App()) {
             }
             ctx.ack()
         }
+    }
+
+    private fun parseAction(action: BlockActionPayload.Action): Pair<String, String>? {
+        val rawValue = when (action.type) {
+            StaticSelectElement.TYPE -> action.selectedOption.value
+            ButtonElement.TYPE -> action.value
+            else -> {
+                log.info { "unknown action type: ${action.type}" }
+                return null
+            }
+        }
+        val split = rawValue.split("-")
+        return split[0] to split[1]
     }
 
     private fun trySend(message: PubsubMessage) {
