@@ -10,7 +10,6 @@ import com.slack.api.model.block.element.StaticSelectElement
 import createCv
 import no.jpro.slack.cv.SectionDetails
 import no.jpro.slack.cv.flowcase.FlowcaseService
-import no.jpro.slack.cv.getOptionText_NO
 import no.jpro.slack.cv.markdownQuoteBlock
 import no.jpro.slack.cv.whichSectionQuestion
 import org.junit.jupiter.api.Disabled
@@ -52,6 +51,7 @@ class SlackIT {
         val result = slack.chatPostMessage {
             it.channel(channelId)
                 .text(whichSectionQuestion)
+                .threadTs("1745605372.963769")
                 .blocks(listOf(DividerBlock.builder().build()) + listOf(questionSection(createCv())))
         }
 
@@ -75,7 +75,7 @@ private fun questionSection(cv: FlowcaseService.FlowcaseCv): SectionBlock {
         .reversed()
         .map { projectExperience ->
             OptionObject.builder()
-                .text(PlainTextObject(getOptionText_NO(projectExperience), false))
+                .text(PlainTextObject(projectExperience.description.no, false))
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }

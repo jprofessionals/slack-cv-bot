@@ -8,10 +8,11 @@ import com.google.cloud.Timestamp
 import com.google.cloud.firestore.FirestoreOptions
 import com.slack.api.Slack
 import com.slack.api.methods.kotlin_extension.request.chat.blocks
-import com.slack.api.model.block.ActionsBlock
+import com.slack.api.model.block.DividerBlock
 import com.slack.api.model.block.SectionBlock
+import com.slack.api.model.block.composition.OptionObject
 import com.slack.api.model.block.composition.PlainTextObject
-import com.slack.api.model.block.element.ButtonElement
+import com.slack.api.model.block.element.StaticSelectElement
 import com.sun.net.httpserver.HttpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.jpro.slack.*
@@ -262,39 +263,42 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
             .channel(slackSlashCommand.slackThread.channelId)
             .threadTs(slackSlashCommand.slackThread.threadTs)
             .text(whichSectionQuestion)
-            .blocks(listOf(whichSectionQuestionBlock) + actionsBlocks(cv))
+            .blocks(listOf(DividerBlock.builder().build(), questionSection(cv)))
     }
     log.debug { message }
 }
 
-private fun actionsBlocks(cv: FlowcaseService.FlowcaseCv): List<ActionsBlock> {
-    val keyQualificationElements = cv.key_qualifications.orEmpty()
+private fun questionSection(cv: FlowcaseService.FlowcaseCv): SectionBlock {
+    val keyQualificationOptionElements = cv.key_qualifications.orEmpty()
         .filter { !it.disabled }
         .map { keyQualification ->
-            ButtonElement.builder()
+            OptionObject.builder()
                 .text(PlainTextObject("Sammendrag", false))
                 .value("key_qualification-${keyQualification._id}")
                 .build()
-
         }
-    val projectExperienceElements = cv.project_experiences.orEmpty()
+
+    val projectExperienceOptionElements = cv.project_experiences.orEmpty()
         .filter { !it.disabled }
         .sortedWith(compareBy({ it.year_from }, { it.month_from }))
         .reversed()
         .map { projectExperience ->
-            ButtonElement.builder()
-                .text(PlainTextObject(getButtonText(projectExperience), false))
+            OptionObject.builder()
+                .text(PlainTextObject(projectExperience.description.no, false))
                 .value("project_experience-${projectExperience._id}")
                 .build()
         }
-    val buttons = keyQualificationElements + projectExperienceElements
-    return buttons.chunked(buttonLimit)
-        .mapIndexed { i, buttonChunk ->
-            ActionsBlock.builder()
-                .blockId("sectionSelection-$i")
-                .elements(buttonChunk)
+    val options = keyQualificationOptionElements + projectExperienceOptionElements
+
+    return SectionBlock.builder()
+        .text(PlainTextObject(whichSectionQuestion, true))
+        .accessory(
+            StaticSelectElement.builder()
+                .placeholder(PlainTextObject("Velg", true))
+                .options(options)
                 .build()
-        }
+        )
+        .build()
 }
 
 private fun getProjectDescription(pe: FlowcaseService.ProjectExperiences): String {
@@ -318,7 +322,7 @@ private fun getText_NO(tv: FlowcaseService.TranslatedValue): String {
         ?: "<IKKE OPPGITT>"
 }
 
-fun getOptionText_NO(pe: FlowcaseService.ProjectExperiences): String {
+private fun getOptionText_NO(pe: FlowcaseService.ProjectExperiences): String {
     return (pe.description.no
         ?.takeIf { it.isNotEmpty() }
         ?: "Ikke-navngitt prosjekt") + " - " +
