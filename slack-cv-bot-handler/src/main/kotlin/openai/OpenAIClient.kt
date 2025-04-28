@@ -28,8 +28,10 @@ class OpenAIClient(
             .build();
     }
 
-    fun startNewThread(message: String, onAnswer: (answer: String, threadId: String) -> Unit) {
-        chatInThread(message, createThread(), onAnswer,)
+    fun startNewThread(message: String, onAnswer: (answer: String, threadId: String) -> Unit): String {
+        val openAiThreadId = createThread()
+        chatInThread(message, openAiThreadId, onAnswer)
+        return openAiThreadId
     }
 
     fun chatInThread(

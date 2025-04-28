@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.Timestamp
 import com.google.cloud.firestore.FirestoreOptions
+import com.google.cloud.firestore.SetOptions
 import com.slack.api.Slack
 import com.slack.api.methods.kotlin_extension.request.chat.blocks
 import com.slack.api.model.block.DividerBlock
@@ -161,8 +162,8 @@ private fun decodeAvro(inputStream: ByteArrayInputStream): SlackEvent {
 }
 
 fun handleSectionSelection(sectionSelection: SectionSelection) {
-    val document = firestore.collection("threads").document(firestoreId(sectionSelection.slackThread)).get().get()
-    if (!document.exists()) {
+    val firestoreThread = readFromFirestore(sectionSelection.slackThread)
+    if (firestoreThread == null) {
         slack.chatPostMessage {
             it
                 .channel(sectionSelection.slackThread.channelId)
@@ -171,9 +172,8 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
         }
         return
     }
-
-    val userEmail = document.getString("userEmail")
-    val cv = cvReader.readCV(userEmail!!) // TODO: what if cv not found
+    val userEmail = firestoreThread.userEmail
+    val cv = cvReader.readCV(userEmail) // TODO: what if cv not found
     val sectionDetails = getSectionDetails(sectionSelection, cv)
     if (sectionDetails == null) {
         slack.chatPostMessage {
@@ -197,7 +197,7 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
             }
     }
 
-    openAIClient.startNewThread(
+    val openAiThreadId = openAIClient.startNewThread(
         message = sectionDetails.prompt,
         onAnswer = { answer, _ ->
             log.info { "Received answer from OpenAI" }
@@ -211,6 +211,7 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
             askForSectionSelection(sectionSelection.slackThread.channelId, sectionSelection.slackThread.threadTs, cv)
         }
     )
+    updateFirestoreWithOpenAiThreadId(sectionSelection.slackThread, openAiThreadId)
 }
 
 private fun getSectionDetails(
@@ -258,7 +259,7 @@ fun handleSlashCommand(slackSlashCommand: SlashCommand) {
     }
     val cv = cvReader.readCV(slackSlashCommand.userEmail)//TODO: what if cv not found
 
-    writeToDatastore(slackSlashCommand.slackThread, slackSlashCommand.userEmail)
+    writeEmailToDatastore(slackSlashCommand.slackThread, slackSlashCommand.userEmail)
 
     askForSectionSelection(slackSlashCommand.slackThread.channelId, slackSlashCommand.slackThread.threadTs, cv)
 }
@@ -360,14 +361,31 @@ private fun getButtonText(projectExperience: FlowcaseService.ProjectExperiences)
 
 data class FirestoreThread(
     val userEmail: String,
+    val openAiThreadId: String? = null,
     val expiresAt: Timestamp = Timestamp.of(Date.from(ZonedDateTime.now().plusHours(8).toInstant()))
 )
 
-private fun writeToDatastore(slackThread: SlackThread, userEmail: String) {
+private fun writeEmailToDatastore(slackThread: SlackThread, userEmail: String) {
     val id = firestoreId(slackThread)
     log.debug { "Writing to firestore: id=$id" }
-    val result = firestore.collection("threads").document(id).set(FirestoreThread(userEmail))
-    log.info { "Wrote to firestore: ${result.get()}" }
+    val result = firestore.collection("threads").document(id).set(FirestoreThread(userEmail)).get()
+    log.info { "Wrote to firestore: $result" }
+}
+
+private fun updateFirestoreWithOpenAiThreadId(slackThread: SlackThread, openAiThreadId: String) {
+    val id = firestoreId(slackThread)
+    log.debug { "Writing to firestore: id=$id" }
+    val patch = mapOf("openAiThreadId" to openAiThreadId)
+    val result = firestore.collection("threads").document(id).set(patch, SetOptions.merge()).get()
+    log.info { "Wrote to firestore: $result" }
+}
+
+private fun readFromFirestore(slackThread: SlackThread): FirestoreThread? {
+    val document = firestore.collection("threads").document(firestoreId(slackThread)).get().get()
+    if (!document.exists()) {
+        return null
+    }
+    return document.toObject(FirestoreThread::class.java)!!
 }
 
 private fun firestoreId(slackThread: SlackThread) = "${slackThread.channelId}#${slackThread.threadTs}"
