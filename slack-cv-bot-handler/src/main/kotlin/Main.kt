@@ -359,6 +359,9 @@ private fun getButtonText(projectExperience: FlowcaseService.ProjectExperiences)
         ?: "Ikke-navngitt prosjekt"
 }
 
+annotation class NoArgConstructor
+
+@NoArgConstructor
 data class FirestoreThread(
     val userEmail: String,
     val openAiThreadId: String? = null,

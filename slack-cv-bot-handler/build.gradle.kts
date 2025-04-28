@@ -1,6 +1,7 @@
 plugins {
     application
     kotlin("jvm") version "2.1.20"
+    kotlin("plugin.noarg") version "2.1.20"
     id("com.google.cloud.tools.jib") version "3.4.5"
 }
 
@@ -67,4 +68,8 @@ jib {
         ports= listOf("3000")
     }
 
+}
+
+noArg {
+    annotation("no.jpro.slack.cv.NoArgConstructor")
 }
