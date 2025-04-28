@@ -57,6 +57,20 @@
               }
             }
           ]
+        },
+        {
+          "type": "record",
+          "name": "ThreadMessage",
+          "fields": [
+            {
+              "name": "slackThread",
+              "type": "SlackThread"
+            },
+            {
+              "name": "text",
+              "type": "string"
+            }
+          ]
         }
       ]
     }

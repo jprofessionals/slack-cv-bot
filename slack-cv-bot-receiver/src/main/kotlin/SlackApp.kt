@@ -10,6 +10,7 @@ import no.jpro.slack.SectionSelection
 import no.jpro.slack.SectionType
 import no.jpro.slack.SlackThread
 import no.jpro.slack.SlashCommand
+import no.jpro.slack.ThreadMessage
 import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger {}
@@ -45,6 +46,11 @@ class SlackApp(val app: App = App()) {
             val threadTs = payload.event.threadTs
             val text = payload.event.text
             log.debug { "Received message channelId=$channelId, threadTs=$threadTs, text=$text" }
+            if (threadTs != null) {
+                val threadMessage = ThreadMessage(SlackThread(channelId, threadTs), text)
+                val pubsubMessage = pubsubMessage(threadMessage)
+                trySend(pubsubMessage)
+            }
             ctx.ack()
         }
     }
