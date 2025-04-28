@@ -22,6 +22,7 @@ class SlackApp(val app: App = App()) {
         slashCommandLesCV()
         pingMessage()
         blockAction()
+        message()
     }
 
     private fun pingMessage() {
@@ -34,6 +35,16 @@ class SlackApp(val app: App = App()) {
                     .threadTs(event.threadTs ?: event.ts)
                     .channel(event.channel)
             }
+            ctx.ack()
+        }
+    }
+
+    private fun message() {
+        app.message(Pattern.compile("^.*$")) { payload, ctx ->
+            val channelId = payload.event.channel
+            val threadTs = payload.event.threadTs
+            val text = payload.event.text
+            log.debug { "Received message channelId=$channelId, threadTs=$threadTs, text=$text" }
             ctx.ack()
         }
     }
