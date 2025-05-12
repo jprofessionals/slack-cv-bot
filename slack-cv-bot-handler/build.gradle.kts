@@ -24,14 +24,14 @@ dependencies {
 
     // Json stuff
     implementation("com.jayway.jsonpath:json-path:2.9.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
 
     implementation ("io.github.oshai:kotlin-logging-jvm:7.0.7")
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
     // Google Cloud
-    implementation(platform("com.google.cloud:libraries-bom:26.59.0"))
+    implementation(platform("com.google.cloud:libraries-bom:26.60.0"))
     implementation("com.google.cloud:google-cloud-logging-logback")
     implementation("com.google.cloud:google-cloud-pubsub")
     implementation("com.google.cloud:google-cloud-firestore")
