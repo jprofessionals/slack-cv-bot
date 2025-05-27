@@ -143,6 +143,7 @@ fun main() {
                     when (val event = decodeAvro(inputStream).event) {
                         is SlashCommand -> handleSlashCommand(event)
                         is SectionSelection -> handleSectionSelection(event)
+                        is ThreadMessage -> handleThreadMessage(event)
                         else -> log.info { "Ignoring unknown event type: ${event::class.java}" }
                     }
                 }
@@ -154,6 +155,36 @@ fun main() {
         exchange.responseBody.close()
     }
     httpServer.start()
+}
+
+fun handleThreadMessage(threadMessage: ThreadMessage) {
+    val firestoreThread = readFromFirestore(threadMessage.slackThread)
+    if (firestoreThread == null) {
+        slack.chatPostMessage {
+            it
+                .channel(threadMessage.slackThread.channelId)
+                .threadTs(threadMessage.slackThread.threadTs)
+                .text("Jeg har glemt denne samtalen. Kan du starte en ny en?")
+        }
+        return
+    }
+    if (firestoreThread.openAiThreadId == null) {
+        slack.chatPostMessage {
+            it
+                .channel(threadMessage.slackThread.channelId)
+                .threadTs(threadMessage.slackThread.threadTs)
+                .text("Du har ikke spurt meg om en vurdering enda.")
+        }
+        return
+    }
+    openAIClient.chatInThread(
+        threadMessage.text,
+        firestoreThread.openAiThreadId,
+        onAnswer = { answer, _ ->
+            log.info { "Received answer from OpenAI" }
+            respondInThread(threadMessage.slackThread, answer)
+        }
+    )
 }
 
 private fun decodeAvro(inputStream: ByteArrayInputStream): SlackEvent {
@@ -201,17 +232,21 @@ fun handleSectionSelection(sectionSelection: SectionSelection) {
         message = sectionDetails.prompt,
         onAnswer = { answer, _ ->
             log.info { "Received answer from OpenAI" }
-            slack.chatPostMessage {
-                it
-                    .channel(sectionSelection.slackThread.channelId)
-                    .threadTs(sectionSelection.slackThread.threadTs)
-                    .text(answer.replace("**", "*"))//By replacing this markdown is usually accepted by slack
-            }
+            respondInThread(sectionSelection.slackThread, answer)
 
             askForSectionSelection(sectionSelection.slackThread.channelId, sectionSelection.slackThread.threadTs, cv)
         }
     )
     updateFirestoreWithOpenAiThreadId(sectionSelection.slackThread, openAiThreadId)
+}
+
+private fun respondInThread(slackThread: SlackThread, answer: String) {
+    slack.chatPostMessage {
+        it
+            .channel(slackThread.channelId)
+            .threadTs(slackThread.threadTs)
+            .text(answer.replace("**", "*"))//By replacing this markdown is usually accepted by slack
+    }
 }
 
 private fun getSectionDetails(
