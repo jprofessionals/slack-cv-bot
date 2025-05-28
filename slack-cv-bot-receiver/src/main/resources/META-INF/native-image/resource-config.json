@@ -1,0 +1,18 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "javax/servlet/LocalStrings\\.properties"
+      },
+      {
+        "pattern": "javax/servlet/http/LocalStrings\\.properties"
+      },
+      {
+        "pattern": "org/eclipse/jetty/http/mime\\.properties"
+      },
+      {
+        "pattern": "org/eclipse/jetty/http/encoding\\.properties"
+      }
+    ]
+  }
+}

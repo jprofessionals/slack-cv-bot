@@ -2,6 +2,7 @@ plugins {
     application
     kotlin("jvm") version "2.1.20"
     id("com.google.cloud.tools.jib") version "3.4.5"
+    id("org.graalvm.buildtools.native") version "0.10.6"
 }
 
 group = "no.jpro.slack.cv"
@@ -51,6 +52,15 @@ tasks.test {
 kotlin {
     jvmToolchain(21)
 }
+
+//graalvmNative {
+//    binaries {
+//        named("main") {
+//            buildArgs.add("-H:+UnlockExperimentalVMOptions")
+//            buildArgs.add("-H:ReflectionConfigurationFiles=src/main/resources/META-INF/native-image/reflect-config.json")
+//        }
+//    }
+//}
 
 jib {
     to {
