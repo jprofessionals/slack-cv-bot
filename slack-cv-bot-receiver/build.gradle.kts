@@ -34,7 +34,7 @@ dependencies {
     implementation("com.google.cloud:google-cloud-pubsub")
 
     // Openai
-    implementation ("io.github.sashirestela:simple-openai:3.20.0")
+    implementation ("io.github.sashirestela:simple-openai:3.21.0")
     /* OkHttp dependency is optional if you decide to use it with simple-openai */
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
