@@ -1,7 +1,7 @@
 plugins {
     application
-    kotlin("jvm") version "2.1.21"
-    kotlin("plugin.noarg") version "2.1.21"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.noarg)
     id("com.google.cloud.tools.jib") version "3.4.5"
 }
 

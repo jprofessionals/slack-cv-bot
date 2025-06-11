@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "2.1.21"
+    alias(libs.plugins.kotlin.jvm)
     id("com.google.cloud.tools.jib") version "3.4.5"
 }
 
