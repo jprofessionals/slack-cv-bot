@@ -31,7 +31,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
     // Google Cloud
-    implementation(platform("com.google.cloud:libraries-bom:26.61.0"))
+    implementation(platform("com.google.cloud:libraries-bom:26.62.0"))
     implementation("com.google.cloud:google-cloud-logging-logback")
     implementation("com.google.cloud:google-cloud-pubsub")
     implementation("com.google.cloud:google-cloud-firestore")
