@@ -319,7 +319,12 @@ private fun questionSection(cv: FlowcaseService.FlowcaseCv): SectionBlock {
         .filter { !it.disabled }
         .map { keyQualification ->
             OptionObject.builder()
-                .text(PlainTextObject("Sammendrag", false))
+                .text(
+                    PlainTextObject.builder()
+                        .text("Sammendrag")   // alltid ikke-tom
+                        .emoji(false)
+                        .build()
+                )
                 .value("key_qualification-${keyQualification._id}")
                 .build()
         }
@@ -328,19 +333,38 @@ private fun questionSection(cv: FlowcaseService.FlowcaseCv): SectionBlock {
         .filter { !it.disabled }
         .sortedWith(compareBy({ it.year_from }, { it.month_from }))
         .reversed()
-        .map { projectExperience ->
-            OptionObject.builder()
-                .text(PlainTextObject(projectExperience.description.no, false))
-                .value("project_experience-${projectExperience._id}")
+        .mapNotNull { pe ->
+            // Sikker etikett med fallback + lengdebegrensning (Slack: maks 75)
+            val label = getOptionText_NO(pe).trim().ifEmpty { "Ikke-navngitt prosjekt - Ikke-navngitt kunde" }
+            val safe = label.take(75)
+
+            // Skulle den mot formodning bli tom (etter trimming), dropp den
+            if (safe.isEmpty()) null
+            else OptionObject.builder()
+                .text(
+                    PlainTextObject.builder()
+                        .text(safe)
+                        .emoji(false)
+                        .build()
+                )
+                .value("project_experience-${pe._id}")
                 .build()
         }
-    val options = keyQualificationOptionElements + projectExperienceOptionElements
+
+    val options = (keyQualificationOptionElements + projectExperienceOptionElements)
+
+    // Hvis du kan ende med 0 alternativer, gi en tekstlig feilmelding i stedet for en tom select
+    if (options.isEmpty()) {
+        return SectionBlock.builder()
+            .text(PlainTextObject.builder().text("Fant ingen seksjoner å vurdere. Er CV-en deaktivert/uten innhold?").emoji(false).build())
+            .build()
+    }
 
     return SectionBlock.builder()
-        .text(PlainTextObject(whichSectionQuestion, true))
+        .text(PlainTextObject.builder().text(whichSectionQuestion).emoji(true).build())
         .accessory(
             StaticSelectElement.builder()
-                .placeholder(PlainTextObject("Velg", true))
+                .placeholder(PlainTextObject.builder().text("Velg").emoji(true).build())
                 .options(options)
                 .build()
         )
