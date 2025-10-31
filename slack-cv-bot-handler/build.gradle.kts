@@ -23,21 +23,21 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Json stuff
-    implementation("com.jayway.jsonpath:json-path:2.9.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
+    implementation("com.jayway.jsonpath:json-path:2.10.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
 
-    implementation ("io.github.oshai:kotlin-logging-jvm:7.0.7")
-    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation ("io.github.oshai:kotlin-logging-jvm:7.0.13")
+    implementation("ch.qos.logback:logback-classic:1.5.20")
 
     // Google Cloud
-    implementation(platform("com.google.cloud:libraries-bom:26.61.0"))
+    implementation(platform("com.google.cloud:libraries-bom:26.71.0"))
     implementation("com.google.cloud:google-cloud-logging-logback")
     implementation("com.google.cloud:google-cloud-pubsub")
     implementation("com.google.cloud:google-cloud-firestore")
 
     // Openai
-    implementation ("io.github.sashirestela:simple-openai:3.21.0")
+    implementation ("io.github.sashirestela:simple-openai:3.22.2")
     /* OkHttp dependency is optional if you decide to use it with simple-openai */
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
 
