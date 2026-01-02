@@ -1,7 +1,7 @@
 plugins {
     application
     alias(libs.plugins.kotlin.jvm)
-    id("com.google.cloud.tools.jib") version "3.4.5"
+    id("com.google.cloud.tools.jib") version "3.5.2"
 }
 
 group = "no.jpro.slack.cv"
