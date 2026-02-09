@@ -12,7 +12,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
 
-    api("org.apache.avro:avro:1.12.0")
+    api("org.apache.avro:avro:1.12.1")
 }
 
 tasks.test {
@@ -21,7 +21,7 @@ tasks.test {
 
 val avroTools by configurations.creating
 dependencies {
-    avroTools("org.apache.avro:avro-tools:1.12.0")
+    avroTools("org.apache.avro:avro-tools:1.12.1")
 }
 
 val generateAvro = tasks.register<JavaExec>("generateAvro") {
